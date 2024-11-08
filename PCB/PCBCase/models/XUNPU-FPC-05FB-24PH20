@@ -1,0 +1,13 @@
+// FPC 24 pin connector
+{
+	if(part)
+	{
+		b(0,0,0,11.8,3.9,0.5); // Pins
+		b(0,-0.6,0,15.8,5.2,2.1); // Connector
+		b(0,0,1,15,25,0.1); // Ribbon
+	}
+	if(hole)
+	{
+		b(0,0,1,15,25,0.1); // Ribbon
+	}
+}

@@ -1,0 +1,21 @@
+// 1x1mm LED
+if(part)
+{
+        b(0,0,0,1.2,1.2,.8);
+}
+if(hole)
+{
+        hull()
+        {
+                b(0,0,.8,1.2,1.2,1);
+                translate([0,0,height])cylinder(d=2,h=1,$fn=16);
+        }
+}
+if(block)
+{
+        hull()
+        {
+                b(0,0,0,2.4,2.4,1);
+                translate([0,0,height])cylinder(d=4,h=1,$fn=16);
+        }
+}

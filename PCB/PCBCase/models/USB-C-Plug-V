@@ -1,0 +1,13 @@
+if(part)
+{	// Do this all as hole, no point doing hull over the part
+
+}
+if(hole)
+{
+	hull()
+	{
+		translate([-2.825,0,0])cylinder(d=2.6+0.4,h=8.85); // Slightly extended as hole is not extended
+		translate([2.825,0,0])cylinder(d=2.6+0.4,h=8.85);
+	}
+	translate([0,0,2.5])cylinder(r=10,h=100); // Plug in to something
+}

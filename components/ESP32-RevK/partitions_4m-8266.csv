@@ -1,0 +1,11 @@
+# Espressif ESP32 Partition Table
+# Name,   Type, SubType, Offset,  Size, Flags
+RevK,     data, nvs,     0x009000,0x004000,
+otadata,  data, ota,     0x00d000,0x002000,
+phy_init, data, phy,     0x00f000,0x001000,
+ota_0,	  0,    ota_0,   0x010000,0x1e0000,
+esp_secure_cert,  0x3F, ,0x1f0000,0x002000, encrypted
+fctry,    data, nvs,     0x200000,0x006000
+ota_1,	  0,    ota_1,   0x210000,0x1e0000,
+nvs,      data, nvs,     0x3F0000,0x00f000,
+nvs_key,  data, nvs_keys,0x3FF000,0x001000,

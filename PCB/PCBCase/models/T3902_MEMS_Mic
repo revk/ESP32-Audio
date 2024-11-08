@@ -1,0 +1,9 @@
+if(part)
+{
+	b(0,0,0,2.65,3.5,0.98);
+}
+if(hole)
+{
+	translate([0,-0.75,-height-0.1])
+		cylinder(d1=2,d2=1,h=height);
+}

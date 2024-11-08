@@ -1,0 +1,11 @@
+*.o
+*~
+*.swp
+.DS_Store
+*.dSYM
+*.exe
+revk_settings
+settings.c
+settings.h
+idfmon
+

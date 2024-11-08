@@ -1,0 +1,19 @@
+#!/bin/csh -f
+if("$1" != "") then
+	set d=($1)
+else
+	set d=(/dev/cu.usbmodem* /dev/ttyACM*)
+endif
+
+if($#d == 0) then
+	echo No device
+	exit 0
+endif
+
+#git pull
+make -C components/ESP32-RevK idfmon
+
+again:
+components/ESP32-RevK/idfmon $d[1]
+esptool.py --chip esp32s3 -p $d[1] -b 460800 -b 460800 --before=default_reset --after=hard_reset write_flash --flash_mode dio --flash_freq 80m --flash_size 4MB 0x0 s3.bin
+goto again

@@ -1,0 +1,102 @@
+#!/bin/csh -f
+
+setenv	SUFFIX	""
+
+setenv SDKCONFIG "sdkconfig"
+if("$1" != "") setenv SDKCONFIG "$1"
+
+if(! -e "$SDKCONFIG") then
+        echo "Missing $SDKCONFIG"
+        exit 0
+endif
+
+# ensure date/time set
+
+grep -q CONFIG_IDF_TARGET_ESP8266=y "$SDKCONFIG"
+if (! $status) then
+    # 8266 variants: -8266 -8266-4M
+	setenv  SUFFIX  "$SUFFIX-8266"
+	grep -q partitions_4m "$SDKCONFIG"
+	if(! $status) 	setenv	SUFFIX	"$SUFFIX-4M"
+	touch "${IDF_PATH}/components/app_update/esp_app_desc.c"
+else
+	touch "${IDF_PATH}/components/esp_app_format/esp_app_desc.c"
+endif
+
+grep -q CONFIG_IDF_TARGET_ESP32=y "$SDKCONFIG"
+if(! $status) 	then
+	setenv	SUFFIX	"$SUFFIX-S1"
+	# Min rev build (default now V3)
+	#grep -q CONFIG_ESP32_REV_MIN_3=y "$SDKCONFIG"
+	#if(! $status) 	setenv	SUFFIX	"$SUFFIX-V3"
+	grep -q CONFIG_ESP32_REV_MIN_2=y "$SDKCONFIG"
+	if(! $status) 	setenv	SUFFIX	"$SUFFIX-V2"
+	grep -q CONFIG_ESP32_REV_MIN_1=y "$SDKCONFIG"
+	if(! $status) 	setenv	SUFFIX	"$SUFFIX-V1"
+	grep -q CONFIG_ESP32_REV_MIN_0=y "$SDKCONFIG"
+	if(! $status) 	setenv	SUFFIX	"$SUFFIX-V0"
+	grep -q CONFIG_REVK_D4=y "$SDKCONFIG"
+	if(! $status) 	then
+		setenv	SUFFIX	"$SUFFIX-D4"
+	else
+		grep -q CONFIG_FREERTOS_UNICORE=y "$SDKCONFIG"
+		if(! $status) 	setenv	SUFFIX	"$SUFFIX-SOLO"
+		grep -q CONFIG_REVK_PICO=y "$SDKCONFIG"
+		if(! $status) 	setenv	SUFFIX	"$SUFFIX-PICO"
+	endif
+endif
+
+grep -q CONFIG_IDF_TARGET_ESP32S2=y "$SDKCONFIG"
+if(! $status) 	then
+
+	setenv	SUFFIX	"$SUFFIX-S2"
+endif
+
+grep -q CONFIG_IDF_TARGET_ESP32S3=y "$SDKCONFIG"
+if(! $status) 	then
+	setenv	SUFFIX	"$SUFFIX-S3"
+	grep -q CONFIG_ESP32S3_REV_MIN_2=y "$SDKCONFIG"
+	if(! $status) 	setenv	SUFFIX	"$SUFFIX-V2"
+	grep -q CONFIG_ESP32S3_REV_MIN_1=y "$SDKCONFIG"
+	if(! $status) 	setenv	SUFFIX	"$SUFFIX-V1"
+
+	grep -q CONFIG_REVK_MINI=y "$SDKCONFIG"
+	if(! $status)   setenv  SUFFIX  "$SUFFIX-MINI"
+
+	grep -q CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y "$SDKCONFIG"
+	if(! $status)   setenv  SUFFIX  "$SUFFIX-N4"
+	grep -q CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y "$SDKCONFIG"
+	if(! $status)   setenv  SUFFIX  "$SUFFIX-N8"
+
+	grep -q CONFIG_ESP32S3_SPIRAM_SUPPORT=y "$SDKCONFIG"
+	if(! $status)   setenv  SUFFIX  "$SUFFIX-R2"
+endif
+
+grep -q CONFIG_IDF_TARGET_ESP32C3=y "$SDKCONFIG"
+if(! $status) 	then
+	setenv	SUFFIX	"$SUFFIX-C3"
+endif
+
+grep -q CONFIG_IDF_TARGET_ESPH2=y "$SDKCONFIG"
+if(! $status) 	then
+	setenv	SUFFIX	"$SUFFIX-H2"
+endif
+
+grep -q CONFIG_REVK_MATTER=y "$SDKCONFIG"
+if(! $status) 	then
+	setenv	SUFFIX	"$SUFFIX-MT"
+endif
+
+set bs=(`grep _BUILD_SUFFIX_ sdkconfig | sed 's/.*\(CONFIG_[A-Z0-9_]*_BUILD_SUFFIX_[A-Z0-9]*\).*/\1/'`)
+foreach c ($bs)
+	grep -q "$c=y" "$SDKCONFIG"
+	if(! $status)	setenv	SUFFIX	"$SUFFIX-"`echo -n "$c" | sed 's/CONFIG_.*_BUILD_SUFFIX_\(.*\)/\1/'`
+end
+
+grep -q '^CONFIG_REVK_BUILD_SUFFIX="'"$SUFFIX"'"$' "$SDKCONFIG"
+if($status) then
+	sed -e 's/^CONFIG_REVK_BUILD_SUFFIX=.*$/CONFIG_REVK_BUILD_SUFFIX="'"$SUFFIX"'"/' "$SDKCONFIG" > "$SDKCONFIG.new"
+	mv -f "$SDKCONFIG.new" "$SDKCONFIG"
+endif
+
+echo -n "$SUFFIX"
