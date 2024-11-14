@@ -1,16 +1,6 @@
-gpio	rgb		4	.array=2		// GPIO for LED chain
-#ifndef  CONFIG_REVK_BLINK_DEF
-gpio	blink		"35 35 35"		.array=3	// Status LED
-#endif
+gpio	spk.lrc				// LR clock
+gpio	spk.bclk			// Bit clock
+gpio	spk.data			// Data
+u32	spk.rate	44100		// Output rate
 
-bit	dark			.hide=1			// Dark mode (no status LED)
-u8	webcontrol	2				// Web controls
-
-u8	audio.rate	25				// Sample rate
-gpio	audio.data	38				// I2S Data / SD
-gpio	audio.clock	40				// I2S Clock / SCK
-gpio	audio.ws					// I2S WS (not set for PDM)
-bit	audio.right					// I2S PDM use right channel
-u8	audio.damp	3	.live=1			// Damping from peak (higher is slower)
-u8	audio.maxgain	50	.live=1			// Max auto gain
 
