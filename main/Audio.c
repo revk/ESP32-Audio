@@ -202,7 +202,12 @@ spk_task (void *arg)
                continue;
             }
             if (!messagep && message)
-               messagep = message;      // Start new mesage
+               messagep = message;      // Start new message
+	    if(!messagep)
+	    {
+               off = unit;
+               continue;
+	    }
             char c = toupper ((int) *messagep);
             for (int i = 0; i < sizeof (morse) / sizeof (*morse); i++)
                if (morse[i].c == c)
