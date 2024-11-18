@@ -1,5 +1,5 @@
 /* Audio app */
-/* Copyright ©2019 - 23 Adrian Kennard, Andrews & Arnold Ltd.See LICENCE file for details .GPL 3.0 */
+/* Copyright ©2024 Adrian Kennard, Andrews & Arnold Ltd.See LICENCE file for details .GPL 3.0 */
 
 static const char TAG[] = "Audio";
 
@@ -14,22 +14,53 @@ static const char TAG[] = "Audio";
 #include "fft.h"
 #include "math.h"
 
-#define AUDIOOVERSAMPLE 4       // From raw to FFT
-#define AUDIOHZ         ((int)audiorate)        // Hz step
-#define AUDIOSAMPLES    512     // Power of 2 (this is multiplied by oversample)
-#define AUDIORATE       (AUDIOSAMPLES*AUDIOHZ)  // Hz which is multiplied by oversample (TDK 25-300ks/s in theory but 25k seemed not to work)
-#define AUDIOMIN        ((int)audiorate*2)      // Hz
-#define AUDIOMAX        ((int)audiorate*(AUDIOSAMPLES/2))       // Hz
-#define AUDIOBANDS      42      // How many bands we make log based
-#define AUDIOSTEP       ((AUDIOMAX-AUDIOMIN)/AUDIOBANDS)        // Hz steps
-#define AUDIOGAINMIN    0.01
-#define AUDIOGAINMAX    (audiomaxgain)
+struct
+{
+   char c;
+   const char *m;
+} morse[] = {
+   {'A', ".-"},
+   {'B', "-..."},
+   {'C', "-.-."},
+   {'D', "-.."},
+   {'E', "."},
+   {'F', "..-."},
+   {'G', "--."},
+   {'H', "...."},
+   {'I', ".."},
+   {'J', ".---"},
+   {'K', "-.-"},
+   {'L', ".-.."},
+   {'M', "--"},
+   {'N', "-."},
+   {'O', "---"},
+   {'P', ".--."},
+   {'Q', "--.-"},
+   {'R', ".-."},
+   {'S', "..."},
+   {'T', "-"},
+   {'U', "..-"},
+   {'V', "...-"},
+   {'W', ".--"},
+   {'X', "-..-"},
+   {'Y', "-.--"},
+   {'Z', "--.-"},
+   {'1', ".----"},
+   {'2', "..---"},
+   {'3', "...--"},
+   {'4', "....-"},
+   {'5', "....."},
+   {'6', "-...."},
+   {'7', "--..."},
+   {'8', "---.."},
+   {'9', "----."},
+   {'0', "-----"},
+};
+
+char *message = NULL;           // Malloc'd
 
 struct
 {
-   uint8_t sound:1;             // An audio based effect is in use
-   uint8_t soundok:1;           // Receiving sound data
-   uint8_t checksound:1;        // Temp
 } b;
 
 static httpd_handle_t webserver = NULL;
@@ -37,9 +68,21 @@ static httpd_handle_t webserver = NULL;
 const char *
 app_callback (int client, const char *prefix, const char *target, const char *suffix, jo_t j)
 {
-   if (client || !prefix || target || strcmp (prefix, topiccommand))
+   if (client || !prefix || target || strcmp (prefix, topiccommand) || !suffix)
       return NULL;              // Not for us or not a command from main MQTTS
-
+   if (!strcasecmp (suffix, "morse"))
+   {
+      if (message)
+         return "Wait";
+      if (jo_here (j) != JO_STRING)
+         return "JSON string";
+      int l = jo_strlen (j);
+      char *m = mallocspi (l + 1);
+      if (m)
+         jo_strncpy (j, m, l + 1);
+      message = m;
+      return NULL;
+   }
    return NULL;
 }
 
@@ -119,23 +162,76 @@ spk_task (void *arg)
       vTaskDelete (NULL);
       return;
    }
-
 #define	SAMPLES	(spkrate/10)
-   uint32_t f = 1000;
    int32_t *samples = mallocspi (sizeof (int32_t) * SAMPLES);
    uint32_t p = 0;
+   uint32_t unit = 60 * spkrate / morsewpm / 50;
+   uint32_t funit = (60 * spkrate / morsefwpm - 31 * unit) / 19;
+   const char *messagep = NULL;
+   const char *dd = NULL;
+   uint32_t on = 1,
+      off = 0;
    while (1)
    {
       size_t l = 0;
       for (int i = 0; i < SAMPLES; i++)
       {
-         samples[i] = 2147483647 * sin (M_PI * 2 * p / spkrate)/10;
-         p += f;
+         p += morsefreq;
          if (p >= spkrate)
             p -= spkrate;
+         if (on)
+         {
+            samples[i] = 2147483647.0 * morselevel * sin (M_PI * 2 * p / spkrate) / 100;
+            on--;
+            continue;
+         }
+         if (off)
+         {
+            samples[i] = 0;
+            off--;
+            continue;
+         }
+         if (!dd)
+         {                      // End of character
+            if (messagep && !*messagep)
+            {                   // End of message
+               messagep = NULL;
+               free (message);
+               message = NULL;
+               off = unit;
+               continue;
+            }
+            if (!messagep && message)
+               messagep = message;      // Start new mesage
+            char c = toupper ((int) *messagep);
+            for (int i = 0; i < sizeof (morse) / sizeof (*morse); i++)
+               if (morse[i].c == c)
+               {
+                  dd = morse[i].m;
+                  break;
+               }
+            messagep++;
+            if (!dd)
+            {
+               off = unit * 7;
+               continue;
+            }
+         }
+         if (*dd == '.')
+            on = unit;
+         else if (*dd == '-')
+            on = unit * 3;
+         dd++;
+         if (!*dd)
+         {
+            dd = NULL;
+            off = funit * 3;    // inter character
+            if (messagep && !*messagep)
+               off = funit * 7; // inter word
+         } else
+            off = unit;         // intra character
       }
       i2s_channel_write (tx_handle, samples, sizeof (int32_t) * SAMPLES, &l, 100);
-      ESP_LOGE (TAG, "Sent");
    }
 
    vTaskDelete (NULL);
