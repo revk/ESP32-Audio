@@ -14,6 +14,9 @@ static const char TAG[] = "Audio";
 #include "fft.h"
 #include "math.h"
 
+typedef int16_t audio_t;
+#define	audio_max	32767
+
 struct
 {
    char c;
@@ -57,7 +60,7 @@ struct
    {'0', "-----"},
 };
 
-char *message = NULL;           // Malloc'd
+char *morsemessage = NULL;      // Malloc'd
 
 struct
 {
@@ -72,7 +75,7 @@ app_callback (int client, const char *prefix, const char *target, const char *su
       return NULL;              // Not for us or not a command from main MQTTS
    if (!strcasecmp (suffix, "morse"))
    {
-      if (message)
+      if (morsemessage)
          return "Wait";
       if (jo_here (j) != JO_STRING)
          return "JSON string";
@@ -80,7 +83,7 @@ app_callback (int client, const char *prefix, const char *target, const char *su
       char *m = mallocspi (l + 1);
       if (m)
          jo_strncpy (j, m, l + 1);
-      message = m;
+      morsemessage = m;
       return NULL;
    }
    return NULL;
@@ -89,7 +92,6 @@ app_callback (int client, const char *prefix, const char *target, const char *su
 void
 revk_web_extra (httpd_req_t * req, int page)
 {
-   revk_web_setting (req, NULL, "dark");
 }
 
 static void
@@ -135,7 +137,9 @@ spk_task (void *arg)
 
    i2s_std_config_t std_cfg = {
       .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG (spkrate),
-      .slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG (I2S_DATA_BIT_WIDTH_32BIT, I2S_SLOT_MODE_MONO),
+      .slot_cfg =
+         I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG (sizeof (audio_t) == 1 ? I2S_DATA_BIT_WIDTH_8BIT : sizeof (audio_t) ==
+                                              2 ? I2S_DATA_BIT_WIDTH_16BIT : I2S_DATA_BIT_WIDTH_32BIT, I2S_SLOT_MODE_MONO),
       .gpio_cfg = {
                    .mclk = I2S_GPIO_UNUSED,
                    .bclk = spkbclk.num,
@@ -163,81 +167,108 @@ spk_task (void *arg)
       return;
    }
 #define	SAMPLES	(spkrate/10)
-   int32_t *samples = mallocspi (sizeof (int32_t) * SAMPLES);
+   if (!morsemessage && *morsestart)
+      morsemessage = strdup (morsestart);
+   audio_t *samples = mallocspi (sizeof (audio_t) * SAMPLES);
    uint32_t p = 0;
-   uint32_t unit = 60 * spkrate / morsewpm / 50;
-   uint32_t funit = (60 * spkrate / morsefwpm - 31 * unit) / 19;
-   const char *messagep = NULL;
+   uint32_t unit = 0;
+   uint32_t funit = 0;
+   uint32_t fader = 1;
+   const char *morsemessagep = NULL;
    const char *dd = NULL;
    uint32_t on = 1,
-      off = 0;
+      off = 0,
+      fade = 0;
+   audio_t *sin4 = malloc (sizeof (audio_t) * (spkrate / 4 + 1));
+   for (int i = 0; i < spkrate / 4 + 1; i++)
+      sin4[i] = audio_max * sin (M_PI * i / spkrate / 2);
+   int32_t tablesin (int p)
+   {
+      if (p > spkrate / 2)
+         return -tablesin (p - spkrate / 2);
+      if (p > spkrate / 4)
+         return tablesin (spkrate / 2 - p);
+      return sin4[p];
+   }
    while (1)
    {
       size_t l = 0;
-      for (int i = 0; i < SAMPLES; i++)
+      if (!morsemessagep && morsemessage)
       {
-         p += morsefreq;
-         if (p >= spkrate)
-            p -= spkrate;
-         if (on)
-         {
-            samples[i] = 2147483647.0 * morselevel * sin (M_PI * 2 * p / spkrate) / 100;
-            on--;
-            continue;
-         }
-         if (off)
-         {
-            p = -morsefreq;
-            samples[i] = 0;
-            off--;
-            continue;
-         }
-         if (!dd)
-         {                      // End of character
-            if (messagep && !*messagep)
-            {                   // End of message
-               messagep = NULL;
-               free (message);
-               message = NULL;
-               off = unit;
-               continue;
-            }
-            if (!messagep && message)
-               messagep = message;      // Start new message
-            if (!messagep)
-            {
-               off = unit;
-               continue;
-            }
-            char c = toupper ((int) *messagep);
-            for (int i = 0; i < sizeof (morse) / sizeof (*morse); i++)
-               if (morse[i].c == c)
-               {
-                  dd = morse[i].m;
-                  break;
-               }
-            messagep++;
-            if (!dd)
-            {
-               off = unit * 7;
-               continue;
-            }
-         }
-         if (*dd == '.')
-            on = unit;
-         else if (*dd == '-')
-            on = unit * 3;
-         dd++;
-         if (!*dd)
-         {
-            dd = NULL;
-            off = funit * 3;    // inter character
-            if (messagep && !*messagep)
-               off = funit * 7; // inter word
-         } else
-            off = unit;         // intra character
+         morsemessagep = morsemessage;  // New message
+         unit = 60 * spkrate / morsewpm / 50;
+         funit = (60 * spkrate / morsefwpm - 31 * unit) / 19;
+         fader = 5 * spkrate / morsefreq;
       }
-      i2s_channel_write (tx_handle, samples, sizeof (int32_t) * SAMPLES, &l, 100);
+      if (morsemessagep)
+         for (int i = 0; i < SAMPLES; i++)
+         {
+            p += morsefreq;
+            if (p >= spkrate)
+               p -= spkrate;
+            if (on)
+            {
+               if (fade > on)
+                  fade = on;
+               else if (fade < fader)
+                  fade++;
+               samples[i] = tablesin (p) * morselevel * fade / 100 / fader;
+               on--;
+               continue;
+            }
+            if (off)
+            {
+               fade = 0;
+               p = -morsefreq;
+               samples[i] = 0;
+               off--;
+               continue;
+            }
+            if (!dd)
+            {                   // End of character
+               if (morsemessagep && !*morsemessagep)
+               {                // End of message
+                  morsemessagep = NULL;
+                  free (morsemessage);
+                  morsemessage = NULL;
+                  off = unit;
+                  continue;
+               }
+               if (!morsemessagep)
+               {
+                  off = unit;
+                  continue;
+               }
+               char c = toupper ((int) *morsemessagep);
+               for (int i = 0; i < sizeof (morse) / sizeof (*morse); i++)
+                  if (morse[i].c == c)
+                  {
+                     dd = morse[i].m;
+                     break;
+                  }
+               morsemessagep++;
+               if (!dd)
+               {
+                  off = unit * 7;
+                  continue;
+               }
+            }
+            if (*dd == '.')
+               on = unit;
+            else if (*dd == '-')
+               on = unit * 3;
+            dd++;
+            if (!*dd)
+            {
+               dd = NULL;
+               off = funit * 3; // inter character
+               if (morsemessagep && !*morsemessagep)
+                  off = funit * 7;      // inter word
+            } else
+               off = unit;      // intra character
+      } else
+         memset (samples, 0, sizeof (audio_t) * SAMPLES);       // Silence
+      i2s_channel_write (tx_handle, samples, sizeof (audio_t) * SAMPLES, &l, 100);
    }
 
    vTaskDelete (NULL);

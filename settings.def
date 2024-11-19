@@ -1,10 +1,11 @@
 gpio	spk.lrc				// LR clock
 gpio	spk.bclk			// Bit clock
 gpio	spk.data			// Data
-u32	spk.rate	44100		// Output rate (8k 16k 32k 44.1k 48k 88.2k 96k only)
+u32	spk.rate	8000		// Output rate (8k 16k 32k 44.1k 48k 88.2k 96k only)
 
 u32	morse.freq	2000	.live=1		// Tone frequency
 u8	morse.level	50	.live=1		// Level (%)
 u8	morse.wpm	20			// Standard WPM (based on "PARIS " being a word
 u8	morse.fwpm	20			// Farnsworth WPM (based on "PARIS " being a word
+s	morse.start	"SOS"			// Initial morse
 
