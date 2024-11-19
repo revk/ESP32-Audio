@@ -13,6 +13,7 @@ static const char TAG[] = "Audio";
 #include <esp_http_server.h>
 #include "fft.h"
 #include "math.h"
+#include "alaw.h"
 
 typedef int16_t audio_t;
 #define	audio_max	32767
@@ -173,12 +174,10 @@ spk_task (void *arg)
    uint32_t p = 0;
    uint32_t unit = 0;
    uint32_t funit = 0;
-   uint32_t fader = 1;
    const char *morsemessagep = NULL;
    const char *dd = NULL;
    uint32_t on = 1,
-      off = 0,
-      fade = 0;
+      off = 0;
    audio_t *sin4 = malloc (sizeof (audio_t) * (spkrate / 4 + 1));
    for (int i = 0; i < spkrate / 4 + 1; i++)
       sin4[i] = audio_max * sin (M_PI * i / spkrate / 2);
@@ -198,28 +197,21 @@ spk_task (void *arg)
          morsemessagep = morsemessage;  // New message
          unit = 60 * spkrate / morsewpm / 50;
          funit = (60 * spkrate / morsefwpm - 31 * unit) / 19;
-         fader = 5 * spkrate / morsefreq;
       }
       if (morsemessagep)
          for (int i = 0; i < SAMPLES; i++)
          {
-            p += morsefreq;
-            if (p >= spkrate)
-               p -= spkrate;
             if (on)
             {
-               if (fade > on)
-                  fade = on;
-               else if (fade < fader)
-                  fade++;
-               samples[i] = tablesin (p) * morselevel * fade / 100 / fader;
+               samples[i] = tablesin (p) * morselevel / 100;
                on--;
+               p += morsefreq;
+               if (p >= spkrate)
+                  p -= spkrate;
                continue;
             }
             if (off)
             {
-               fade = 0;
-               p = -morsefreq;
                samples[i] = 0;
                off--;
                continue;
