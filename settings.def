@@ -8,3 +8,7 @@ u8	morse.level	50	.live=1		// Level (%)
 u8	morse.wpm	20			// Standard WPM (based on "PARIS " being a word
 u8	morse.fwpm	20			// Farnsworth WPM (based on "PARIS " being a word
 s	morse.start	"Hello world"			// Initial Morse message
+
+u8	dtmf.level	50	.live=1		// Level (%)
+u8	dtmf.tone	0.100	.live=1,.decimal=3		// Tone time
+u8	dtmf.gap	0.100	.live=1,.decimal=3		// Gap time

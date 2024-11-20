@@ -61,6 +61,7 @@ struct
 };
 
 char *morsemessage = NULL;      // Malloc'd
+char *dtmfmessage = NULL;       // Malloc'd
 
 struct
 {
@@ -79,11 +80,16 @@ app_callback (int client, const char *prefix, const char *target, const char *su
          return "Wait";
       if (jo_here (j) != JO_STRING)
          return "JSON string";
-      int l = jo_strlen (j);
-      char *m = mallocspi (l + 1);
-      if (m)
-         jo_strncpy (j, m, l + 1);
-      morsemessage = m;
+      morsemessage = jo_strdup (j);
+      return NULL;
+   }
+   if (!strcasecmp (suffix, "dtmf"))
+   {
+      if (dtmfmessage)
+         return "Wait";
+      if (jo_here (j) != JO_STRING)
+         return "JSON string";
+      dtmfmessage = jo_strdup (j);
       return NULL;
    }
    return NULL;
@@ -170,13 +176,17 @@ spk_task (void *arg)
    if (!morsemessage && *morsestart)
       morsemessage = strdup (morsestart);
    audio_t *samples = mallocspi (sizeof (audio_t) * SAMPLES);
-   uint32_t p = 0;
-   uint32_t unit = 0;
-   uint32_t funit = 0;
    const char *morsemessagep = NULL;
+   const char *dtmfmessagep = NULL;
    const char *dd = NULL;
    uint32_t on = 1,
-      off = 0;
+      off = 0,
+      freq1 = 0,
+      freq2 = 0,
+      phase1 = 0,
+      phase2 = 0,
+      unit1 = 0,
+      unit2 = 0;
    audio_t *sin4 = malloc (sizeof (audio_t) * (spkrate / 4 + 1));
    for (int i = 0; i < spkrate / 4 + 1; i++)
       sin4[i] = audio_max * sin (M_PI * i / spkrate / 2);
@@ -191,22 +201,29 @@ spk_task (void *arg)
    while (1)
    {
       size_t l = 0;
-      if (!morsemessagep && morsemessage)
+      if (!morsemessagep && !dtmfmessagep && morsemessage)
       {
          morsemessagep = morsemessage;  // New message
-         unit = 60 * spkrate / morsewpm / 50;
-         funit = (60 * spkrate / morsefwpm - 31 * unit) / 19;
+         unit1 = 60 * spkrate / morsewpm / 50;
+         unit2 = (60 * spkrate / morsefwpm - 31 * unit1) / 19;
+         freq1 = morsefreq;
+      }
+      if (!morsemessagep && !dtmfmessagep && dtmfmessage)
+      {
+         dtmfmessagep = dtmfmessage;    // New message
+         unit1 = dtmftone * spkrate / 1000;
+         unit2 = dtmfgap * spkrate / 1000;
       }
       if (morsemessagep)
          for (int i = 0; i < SAMPLES; i++)
          {
             if (on)
             {
-               samples[i] = tablesin (p) * morselevel / 100;
+               samples[i] = tablesin (phase1) * morselevel / 100;
                on--;
-               p += morsefreq;
-               if (p >= spkrate)
-                  p -= spkrate;
+               phase1 += freq1;
+               if (phase1 >= spkrate)
+                  phase1 -= spkrate;
                continue;
             }
             if (off)
@@ -222,12 +239,12 @@ spk_task (void *arg)
                   morsemessagep = NULL;
                   free (morsemessage);
                   morsemessage = NULL;
-                  off = unit;
+                  off = unit1;
                   continue;
                }
                if (!morsemessagep)
                {
-                  off = unit;
+                  off = unit1;
                   continue;
                }
                char c = toupper ((int) *morsemessagep);
@@ -240,23 +257,64 @@ spk_task (void *arg)
                morsemessagep++;
                if (!dd)
                {
-                  off = unit * 7;
+                  off = unit2 * 7;
                   continue;
                }
             }
             if (*dd == '.')
-               on = unit;
+               on = unit1;
             else if (*dd == '-')
-               on = unit * 3;
+               on = unit1 * 3;
             dd++;
             if (!*dd)
             {
                dd = NULL;
-               off = funit * 3; // inter character
+               off = unit2 * 3; // inter character
                if (morsemessagep && !*morsemessagep)
-                  off = funit * 7;      // inter word
+                  off = unit2 * 7;      // inter word
             } else
-               off = unit;      // intra character
+               off = unit2;     // intra character
+      } else if (dtmfmessagep)
+         for (int i = 0; i < SAMPLES; i++)
+         {
+            if (on)
+            {
+               samples[i] = (tablesin (phase1) + tablesin (phase2)) * dtmflevel / 100 / 2;
+               on--;
+               phase1 += freq1;
+               if (phase1 >= spkrate)
+                  phase1 -= spkrate;
+               phase2 += freq2;
+               if (phase2 >= spkrate)
+                  phase2 -= spkrate;
+               continue;
+            }
+            if (off)
+            {
+               samples[i] = 0;
+               off--;
+               continue;
+            }
+            if (!*dtmfmessagep)
+            {
+               dtmfmessagep = NULL;
+               free (dtmfmessage);
+               dtmfmessage = NULL;
+               off = unit2;
+               continue;
+            }
+            off = unit2;
+            static const char dtmf[] = "123A456B789C*0#D";
+            static const uint32_t col[] = { 1209, 1336, 1477, 1633 };
+            static const uint32_t row[] = { 697, 770, 852, 941 };
+            const char *p = strchr (dtmf, *dtmfmessagep);
+            if (p)
+            {
+               freq1 = col[(p - dtmf) % 4];
+               freq2 = row[(p - dtmf) / 4];
+               on = unit1;
+            }
+            dtmfmessagep++;
       } else
          memset (samples, 0, sizeof (audio_t) * SAMPLES);       // Silence
       i2s_channel_write (tx_handle, samples, sizeof (audio_t) * SAMPLES, &l, 100);
