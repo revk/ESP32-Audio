@@ -80,6 +80,7 @@ app_callback (int client, const char *prefix, const char *target, const char *su
          return "Wait";
       if (jo_here (j) != JO_STRING)
          return "JSON string";
+      // TODO allow object with custom WPM, and so on
       morsemessage = jo_strdup (j);
       return NULL;
    }
@@ -89,6 +90,7 @@ app_callback (int client, const char *prefix, const char *target, const char *su
          return "Wait";
       if (jo_here (j) != JO_STRING)
          return "JSON string";
+      // TODO allow object with custom timings, and so on
       dtmfmessage = jo_strdup (j);
       return NULL;
    }
