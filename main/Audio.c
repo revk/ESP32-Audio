@@ -275,7 +275,7 @@ spk_task (void *arg)
                if (morsemessagep && !*morsemessagep)
                   off = unit2 * 7;      // inter word
             } else
-               off = unit2;     // intra character
+               off = unit1;     // intra character
       } else if (dtmfmessagep)
          for (int i = 0; i < SAMPLES; i++)
          {
