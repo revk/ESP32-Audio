@@ -1,12 +1,12 @@
-gpio	spk.lrc				// LR clock
-gpio	spk.bclk			// Bit clock
-gpio	spk.data			// Data
-u32	spk.rate	8000		// Output rate (8k 16k 32k 44.1k 48k 88.2k 96k only)
+gpio	spk.lrc				// Spekaer LR clock
+gpio	spk.bclk			// Spekaer Bit clock
+gpio	spk.data			// Spekaer Data
+u32	spk.rate	8000 .unit="Hz"	// Spekaer Output rate (8k 16k 32k 44.1k 48k 88.2k 96k only)
 
-gpio	mic.data	1		// I2S Data / SD
-gpio	mic.clock	11		// I2S Clock / SCK
-gpio	mic.ws		0		// I2S WS (not set for PDM)
-u32	mic.rate	44100		// Input rate
+gpio	mic.data	1		// Microphone Data / SD
+gpio	mic.clock	11		// Microphone Clock / SCK
+gpio	mic.ws		0		// Microphone WS (not set for PDM)
+u32	mic.rate	44100 .unit="Hz"	// Microphone Input rate
 
 gpio	sd.ss		12		// MicroSD SS
 gpio	sd.mosi		13		// MicroSD MOSI
@@ -17,16 +17,16 @@ gpio	sd.miso		16		// MicroSD MISO
 gpio	button		37		// Button
 gpio	charging	44		// Charging status
 
-gpio	rgb.status	35		// Sttaus LED
+gpio	rgb.status	35		// Status LED
 gpio	rgb.record	3		// Recording LED
 
-u32	morse.freq	2000	.live=1		// Tone frequency
-u8	morse.level	50	.live=1		// Level (%)
-u8	morse.wpm	20			// Standard WPM (based on "PARIS " being a word
-u8	morse.fwpm	20			// Farnsworth WPM (based on "PARIS " being a word
+u32	morse.freq	2000	.unit="Hz",.live=1		// Morse Tone frequency
+u8	morse.level	50	.unit="%",.live=1		// Morse Level 
+u8	morse.wpm	20	.unit="/min"		// Morse basic rate
+u8	morse.fwpm	20	.unit="/min"		// Morse Farnsworth rate
 s	morse.start	"Hello world"			// Initial Morse message
 
-u8	dtmf.level	50	.live=1		// Level (%)
-u8	dtmf.tone	0.100	.live=1,.decimal=3		// Tone time
-u8	dtmf.gap	0.100	.live=1,.decimal=3		// Gap time
+u8	dtmf.level	50	.unit="%",.live=1		// DTMF Level
+u8	dtmf.tone	0.100	.unit="s",.live=1,.decimal=3		// DTMF Tone time
+u8	dtmf.gap	0.100	.unit="s",.live=1,.decimal=3		// DTMF Gap time
 
