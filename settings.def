@@ -1,7 +1,7 @@
-gpio	spk.lrc				// Spekaer LR clock
-gpio	spk.bclk			// Spekaer Bit clock
-gpio	spk.data			// Spekaer Data
-u32	spk.rate	8000 .unit="Hz"	// Spekaer Output rate (8k 16k 32k 44.1k 48k 88.2k 96k only)
+gpio	spk.lrc				// Speaker LR clock
+gpio	spk.bclk			// Speaker Bit clock
+gpio	spk.data			// Speaker Data
+u32	spk.rate	8000 .unit="Hz"	// Speaker Output rate (8k 16k 32k 44.1k 48k 88.2k 96k only)
 
 gpio	mic.data	1		// Microphone Data / SD
 gpio	mic.clock	11		// Microphone Clock / SCK
@@ -24,7 +24,7 @@ u32	morse.freq	2000	.unit="Hz",.live=1		// Morse Tone frequency
 u8	morse.level	50	.unit="%",.live=1		// Morse Level 
 u8	morse.wpm	20	.unit="/min"		// Morse basic rate
 u8	morse.fwpm	20	.unit="/min"		// Morse Farnsworth rate
-s	morse.start	"Hello world"			// Initial Morse message
+s	morse.start	"Hello world"			// Morse initial message on power on
 
 u8	dtmf.level	50	.unit="%",.live=1		// DTMF Level
 u8	dtmf.tone	0.100	.unit="s",.live=1,.decimal=3		// DTMF Tone time
