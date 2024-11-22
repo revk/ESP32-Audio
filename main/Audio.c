@@ -13,6 +13,8 @@ static const char TAG[] = "Audio";
 #include <esp_http_server.h>
 #include "fft.h"
 #include "math.h"
+#include "esp_vfs_fat.h"
+#include <sys/dirent.h>
 
 typedef int16_t audio_t;
 #define	audio_max	32767
