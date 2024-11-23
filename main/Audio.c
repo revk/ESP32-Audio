@@ -330,7 +330,7 @@ sd_task (void *arg)
                   sdfile = o;
                }
             }
-            if (!b.micon && sdfile)
+            if (!b.micon && sdfile && sdin == sdout)
             {                   // End file
                ESP_LOGI (TAG, "Recording closed");
                xSemaphoreTake (sd_mutex, portMAX_DELAY);
@@ -396,7 +396,7 @@ mic_task (void *arg)
    i2s_chan_handle_t i = { 0 };
    i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG (I2S_NUM_AUTO, I2S_ROLE_MASTER);
    err = i2s_new_channel (&chan_cfg, NULL, &i);
-   micbytes = (micws.set ? 6 : 4);      // No WS means PDM (16 bit)
+   micbytes = (micws.set ? 8 : 4);      // No WS means PDM (16 bit)
    micsamples = micrate / 10;
    for (int i = 0; i < MICQUEUE; i++)
       micaudio[i] = mallocspi (micbytes * micsamples);
@@ -710,14 +710,13 @@ app_main ()
       };
       REVK_ERR_CHECK (led_strip_new_rmt_device (&strip_config, &rmt_config, &led_record));
    }
-
    // Tasks
    if (spklrc.set && spkbclk.set && spkdata.set)
       revk_task ("spk", spk_task, NULL, 8);
    if (micdata.set && micclock.set)
       revk_task ("mic", mic_task, NULL, 8);
    if (sdss.set && sdmosi.set && sdmiso.set && sdsck.set)
-      revk_task ("sd", sd_task, NULL, 8);
+      revk_task ("sd", sd_task, NULL, 16);
 
    // Buttons and LEDs
    revk_gpio_input (button);
