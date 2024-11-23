@@ -1,3 +1,4 @@
+gpio	spk.pwr				// Speaker power on
 gpio	spk.lrc				// Speaker LR clock
 gpio	spk.bclk			// Speaker Bit clock
 gpio	spk.data			// Speaker Data
@@ -30,3 +31,4 @@ u8	dtmf.level	50	.unit="%",.live=1		// DTMF Level
 u8	dtmf.tone	0.100	.unit="s",.live=1,.decimal=3		// DTMF Tone time
 u8	dtmf.gap	0.100	.unit="s",.live=1,.decimal=3		// DTMF Gap time
 
+bit	wifidebug	1		// Keep WiFi one when SD card inserted
