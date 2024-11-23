@@ -12757,7 +12757,7 @@
 		)
 		(fp_arc
 			(start 0.27561 0.422802)
-			(mid 0.162324 0.224752)
+			(mid 0.162323 0.224752)
 			(end 0.123007 0.000003)
 			(stroke
 				(width 0.3)
@@ -12779,7 +12779,7 @@
 		)
 		(fp_arc
 			(start 0.362198 -0.50939)
-			(mid 0.560248 -0.622677)
+			(mid 0.560248 -0.622676)
 			(end 0.784997 -0.661993)
 			(stroke
 				(width 0.3)
@@ -14065,7 +14065,7 @@
 		(attr smd)
 		(fp_arc
 			(start 0.362198 -0.50939)
-			(mid 0.560248 -0.622677)
+			(mid 0.560248 -0.622676)
 			(end 0.784997 -0.661993)
 			(stroke
 				(width 0.3)
@@ -14087,7 +14087,7 @@
 		)
 		(fp_arc
 			(start 0.27561 0.422802)
-			(mid 0.162324 0.224752)
+			(mid 0.162323 0.224752)
 			(end 0.123007 0.000003)
 			(stroke
 				(width 0.3)
@@ -14370,12 +14370,12 @@
 	(footprint "RevK:1.25T-2PWT (Molex 532610271)"
 		(layer "B.Cu")
 		(uuid "d4b29dca-4e65-4c7f-87d7-f934641933e2")
-		(at 114.2 96.5 90)
+		(at 112.45 96.5 90)
 		(property "Reference" "J1"
 			(at 0 0 -90)
 			(layer "B.SilkS")
 			(hide yes)
-			(uuid "f8116ad4-c042-4931-9f1a-2473c84d763f")
+			(uuid "2bf24c0b-ccf7-41e5-9976-c04426e17fa2")
 			(effects
 				(font
 					(size 1 1)
@@ -14387,7 +14387,7 @@
 		(property "Value" "Battery"
 			(at 0 0.5 -90)
 			(layer "B.Fab")
-			(uuid "706367d0-12c6-45a3-b92f-68f0069b3a67")
+			(uuid "fc19950a-caa3-4774-b757-c827b6af9f57")
 			(effects
 				(font
 					(size 1 1)
@@ -14400,7 +14400,7 @@
 			(at 0 0 -90)
 			(layer "B.Fab")
 			(hide yes)
-			(uuid "72d62634-6703-4728-91a7-b48699c70d95")
+			(uuid "7093c9aa-2cec-4179-8da4-bb7161fe9776")
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -14413,7 +14413,7 @@
 			(at 0 0 -90)
 			(layer "B.Fab")
 			(hide yes)
-			(uuid "040cae33-6cc3-4f22-aa19-39bba16cc162")
+			(uuid "217efb98-852d-4e40-835c-1cfc59ff927a")
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -14426,7 +14426,7 @@
 			(at 0 0 -90)
 			(layer "B.Fab")
 			(hide yes)
-			(uuid "9b8a0ab7-6824-4fed-94d9-20465833e501")
+			(uuid "f8bf18b6-0bfa-4365-aef3-4525bf07f6a3")
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -14440,7 +14440,7 @@
 			(unlocked yes)
 			(layer "B.Fab")
 			(hide yes)
-			(uuid "c13114d1-b65c-4fbc-90e1-5d9ea8ded400")
+			(uuid "fdd241b0-32c0-47ef-b648-7204ed157797")
 			(effects
 				(font
 					(size 1 1)
@@ -14455,82 +14455,38 @@
 		(sheetfile "Audio.kicad_sch")
 		(attr smd)
 		(pad "" smd rect
-			(at -3.157 -0.05 90)
+			(at -3.157 1.7 90)
 			(size 2.1 2.9)
 			(layers "B.Cu" "B.Paste" "B.Mask")
-			(teardrops
-				(best_length_ratio 0.5)
-				(max_length 1)
-				(best_width_ratio 1)
-				(max_width 2)
-				(curve_points 5)
-				(filter_ratio 0.9)
-				(enabled yes)
-				(allow_two_segments yes)
-				(prefer_zone_connections no)
-			)
-			(uuid "d3f733da-75a1-4ec5-9a96-7c7fe285030f")
+			(uuid "8a67a359-1fb2-4563-83d9-4e0262614666")
 		)
 		(pad "" smd rect
-			(at 3.175 -0.05 90)
+			(at 3.175 1.7 90)
 			(size 2.1 2.9)
 			(layers "B.Cu" "B.Paste" "B.Mask")
-			(teardrops
-				(best_length_ratio 0.5)
-				(max_length 1)
-				(best_width_ratio 1)
-				(max_width 2)
-				(curve_points 5)
-				(filter_ratio 0.9)
-				(enabled yes)
-				(allow_two_segments yes)
-				(prefer_zone_connections no)
-			)
-			(uuid "de3f0904-ac19-46db-ba59-60a333a5527c")
+			(uuid "771b534a-468c-4fbb-8022-e3e6c8ce39d4")
 		)
 		(pad "1" smd rect
-			(at -0.625 -2.9 90)
+			(at -0.625 -1.15 90)
 			(size 0.5 1.6)
 			(layers "B.Cu" "B.Paste" "B.Mask")
 			(net 1 "GND")
 			(pinfunction "Pin_1")
 			(pintype "passive")
-			(teardrops
-				(best_length_ratio 0.5)
-				(max_length 1)
-				(best_width_ratio 1)
-				(max_width 2)
-				(curve_points 5)
-				(filter_ratio 0.9)
-				(enabled yes)
-				(allow_two_segments yes)
-				(prefer_zone_connections no)
-			)
-			(uuid "3743bc7a-f24f-4ded-8794-253a53a6db31")
+			(uuid "399b4ead-d8c9-4290-a1e2-1ebf85b52abc")
 		)
 		(pad "2" smd rect
-			(at 0.625 -2.9 90)
+			(at 0.625 -1.15 90)
 			(size 0.5 1.6)
 			(layers "B.Cu" "B.Paste" "B.Mask")
 			(net 26 "VBAT")
 			(pinfunction "Pin_2")
 			(pintype "passive")
-			(teardrops
-				(best_length_ratio 0.5)
-				(max_length 1)
-				(best_width_ratio 1)
-				(max_width 2)
-				(curve_points 5)
-				(filter_ratio 0.9)
-				(enabled yes)
-				(allow_two_segments yes)
-				(prefer_zone_connections no)
-			)
-			(uuid "ffbca0cc-5a15-4e5b-986c-934f893fefc5")
+			(uuid "7726f6f0-02bb-41a6-bcb7-6fdbca1fc5e9")
 		)
 		(model "${KISYS3DMOD}/Connector_Molex.3dshapes/Molex_PicoBlade_53261-0271_1x02-1MP_P1.25mm_Horizontal.step"
 			(offset
-				(xyz 0 -0.5 0)
+				(xyz 0 1.5 0)
 			)
 			(scale
 				(xyz 1 1 1)
