@@ -82,6 +82,13 @@ const char *cardstatus = NULL;  // Status of SD card
 uint64_t sdsize = 0,            // SD card data
    sdfree = 0;
 FILE *volatile sdfile = NULL;
+#define	MICQUEUE	32
+uint32_t micbytes = 0;
+uint32_t micsamples = 0;
+uint8_t *micaudio[MICQUEUE] = { 0 };
+
+volatile uint8_t sdin = 0,
+   sdout = 0;
 
 static httpd_handle_t webserver = NULL;
 
@@ -155,9 +162,13 @@ sd_task (void *arg)
 {
    esp_err_t e = 0;
    revk_gpio_input (sdcd);
-   // By default, SD card frequency is initialized to SDMMC_FREQ_DEFAULT (20MHz)
-   // For setting a specific frequency, use host.max_freq_khz (range 400kHz - 20MHz for SDSPI)
-   // Example: for fixed frequency of 10MHz, use host.max_freq_khz = 10000;
+   sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT ();
+#if 0
+   slot_config.gpio_cs = sdss.num;      // use SS pin
+#else
+   slot_config.gpio_cs = -1;    // don't use SS pin
+   revk_gpio_output (sdss, 0);  // Bodge for faster SD card access in ESP IDF V5+
+#endif
    sdmmc_host_t host = SDSPI_HOST_DEFAULT ();
    host.max_freq_khz = SDMMC_FREQ_PROBING;
    spi_bus_config_t bus_cfg = {
@@ -178,6 +189,7 @@ sd_task (void *arg)
       jo_int (j, "MOSI", sdmosi.num);
       jo_int (j, "MISO", sdmiso.num);
       jo_int (j, "CLK", sdsck.num);
+      jo_int (j, "SS", sdss.num);
       revk_error ("SD", &j);
       vTaskDelete (NULL);
       return;
@@ -189,10 +201,6 @@ sd_task (void *arg)
       .disk_status_check_enable = 1,
    };
    sdmmc_card_t *card = NULL;
-   sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT ();
-   //slot_config.gpio_cs = sdss.num;
-   slot_config.gpio_cs = -1;
-   revk_gpio_output (sdss, 0);  // Bodge for faster SD card access in ESP IDF V5+
    slot_config.host_id = host.slot;
    while (!b.die)
    {
@@ -279,13 +287,46 @@ sd_task (void *arg)
             }
             if (b.micon && !sdfile)
             {                   // Start file
-               FILE *o = fopen ("TODO.WAV", "w");
+               char filename[100];
+               sprintf (filename, "%s/TODO.WAV", sd_mount);
+               FILE *o = fopen (filename, "w+");
                if (!o)
-                  ESP_LOGE (TAG, "Failed to open file");
+                  ESP_LOGE (TAG, "Failed to open file %s", filename);
                else
                {
-                  ESP_LOGI (TAG, "Recording opened");
-                  // TODO header
+                  ESP_LOGI (TAG, "Recording opened %s", filename);
+                  uint32_t onehour = 3600 * micrate * micbytes;
+                  struct
+                  {
+                     char filetypeblocid[4];
+                     uint32_t filesize;
+                     char fileformatid[4];
+                     char formatblocid[4];
+                     uint32_t blocsize;
+                     uint16_t audioformat;
+                     uint16_t nbrchannels;
+                     uint32_t frequency;
+                     uint32_t bytepersec;
+                     uint16_t byteperbloc;
+                     uint16_t bitspersample;
+                     char datablocid[4];
+                     uint32_t datasize;
+                  } riff = {
+                     "RIFF",    // Master
+                     36 + onehour,
+                     "WAVE",
+                     "fmt ",    // Chunk
+                     16,
+                     1,         // PCM
+                     2,         // Stereo
+                     micrate,
+                     micrate * micbytes,
+                     micbytes,
+                     micbytes * 4,      // bits
+                     "data",    // Data block
+                     onehour,
+                  };
+                  fwrite (&riff, sizeof (riff), 1, o);
                   sdfile = o;
                }
             }
@@ -296,11 +337,30 @@ sd_task (void *arg)
                FILE *o = sdfile;
                sdfile = NULL;
                xSemaphoreGive (sd_mutex);
-               // TODO rewind/size
+               // Rewind and set size
+               uint32_t len = ftell (o) - 44;   // Data len
+               fseek (o, 40, SEEK_SET);
+               fwrite (&len, 4, 1, o);
+               len += 36;
+               fseek (o, 4, SEEK_SET);
+               fwrite (&len, 4, 1, o);
                fclose (o);
             }
-            // TODO open file and write data
-            sleep (1);
+            if (sdfile)
+            {
+               if (sdin == sdout)
+                  ESP_LOGE (TAG, "Caught up");
+               else
+                  while (sdin != sdout)
+                  {
+                     uint64_t a = esp_timer_get_time ();
+                     fwrite (micaudio[sdout], 1, micsamples * micbytes, sdfile);
+                     uint64_t b = esp_timer_get_time ();
+                     ESP_LOGE (TAG, "Wrote block %d, %ld bytes, %lldms", sdout, micsamples * micbytes, (b - a) / 1000ULL);
+                     sdout = (sdout + 1) % MICQUEUE;
+                  }
+            }
+            usleep (100000);
          }
          rgbsd = 'B';
          // All done, unmount partition and disable SPI peripheral
@@ -336,9 +396,10 @@ mic_task (void *arg)
    i2s_chan_handle_t i = { 0 };
    i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG (I2S_NUM_AUTO, I2S_ROLE_MASTER);
    err = i2s_new_channel (&chan_cfg, NULL, &i);
-   uint32_t samples = micrate / 50;
-   uint8_t bytes = (micws.set ? 8 : 4); // No WS means PDM (16 bit)
-   uint8_t *micraw = mallocspi (bytes * samples);
+   micbytes = (micws.set ? 6 : 4);      // No WS means PDM (16 bit)
+   micsamples = micrate / 10;
+   for (int i = 0; i < MICQUEUE; i++)
+      micaudio[i] = mallocspi (micbytes * micsamples);
    if (micws.set)
    {                            // 24 bit Philips format
       ESP_LOGE (TAG, "Mic init CLK %d DAT %d WS %d", micclock.num, micdata.num, micws.num);
@@ -359,7 +420,7 @@ mic_task (void *arg)
                       },
       };
       cfg.slot_cfg.slot_mask = I2S_STD_SLOT_BOTH;
-      if (bytes == 3)
+      if (micbytes == 6)
          cfg.clk_cfg.mclk_multiple = 384;
       if (!err)
          err = i2s_channel_init_std_mode (i, &cfg);
@@ -391,20 +452,21 @@ mic_task (void *arg)
       vTaskDelete (NULL);
       return;
    }
-   ESP_LOGE (TAG, "Mic started, %ld*%d bits at %ldHz", samples, bytes * 8, micrate);
+   ESP_LOGE (TAG, "Mic started, %ld*%ld bits at %ldHz", micsamples, micbytes * 8, micrate);
    while (1)
    {
       size_t n = 0;
-      i2s_channel_read (i, micraw, bytes * samples, &n, 100);
-      if (n < bytes * samples)
+      i2s_channel_read (i, micaudio[sdin], micbytes * micsamples, &n, 100);
+      if (n < micbytes * micsamples)
          continue;
-      if (*(int32_t *) micraw)
+      if (*(int32_t *) micaudio[sdin])
          b.micok = 1;
       if (!b.micon || !sdfile)
          continue;              // Not needed
-      xSemaphoreTake (sd_mutex, portMAX_DELAY);
-      fwrite (micraw, bytes * samples, 1, sdfile);
-      xSemaphoreGive (sd_mutex);
+      if ((sdin + 1) % MICQUEUE == sdout)
+         ESP_LOGE (TAG, "Mic overflow");
+      else
+         sdin = (sdin + 1) % MICQUEUE;
    }
    vTaskDelete (NULL);
 }
@@ -608,13 +670,6 @@ app_main ()
    revk_boot (&app_callback);
    revk_start ();
 
-   if (spklrc.set && spkbclk.set && spkdata.set)
-      revk_task ("spk", spk_task, NULL, 8);
-   if (micdata.set && micclock.set)
-      revk_task ("mic", mic_task, NULL, 8);
-   if (sdss.set && sdmosi.set && sdmiso.set && sdsck.set)
-      revk_task ("sd", sd_task, NULL, 8);
-
    httpd_config_t config = HTTPD_DEFAULT_CONFIG ();     // When updating the code below, make sure this is enough
    //  Note that we 're also 4 adding revk' s web config handlers
    config.max_uri_handlers = 8;
@@ -638,8 +693,6 @@ app_main ()
          .resolution_hz = 10 * 1000 * 1000,     // 10 MHz
       };
       REVK_ERR_CHECK (led_strip_new_rmt_device (&strip_config, &rmt_config, &led_status));
-      if (led_status)
-         REVK_ERR_CHECK (led_strip_clear (led_status));
    }
    led_strip_handle_t led_record = NULL;
    if (rgbrecord.set)
@@ -656,11 +709,19 @@ app_main ()
          .resolution_hz = 10 * 1000 * 1000,     // 10 MHz
       };
       REVK_ERR_CHECK (led_strip_new_rmt_device (&strip_config, &rmt_config, &led_record));
-      if (led_record)
-         REVK_ERR_CHECK (led_strip_clear (led_record));
    }
+
+   // Tasks
+   if (spklrc.set && spkbclk.set && spkdata.set)
+      revk_task ("spk", spk_task, NULL, 8);
+   if (micdata.set && micclock.set)
+      revk_task ("mic", mic_task, NULL, 8);
+   if (sdss.set && sdmosi.set && sdmiso.set && sdsck.set)
+      revk_task ("sd", sd_task, NULL, 8);
+
    // Buttons and LEDs
    revk_gpio_input (button);
+   revk_gpio_input (charging);
    while (1)
    {
       usleep (100000);
@@ -678,7 +739,7 @@ app_main ()
       }
       if (led_record)
       {
-         revk_led (led_record, 0, 255, revk_rgb (sdrgb));
+         revk_led (led_record, 0, 255, revk_rgb (rgbsd));
          REVK_ERR_CHECK (led_strip_refresh (led_record));
       }
    }
