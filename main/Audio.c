@@ -74,12 +74,14 @@ struct
    uint8_t dodismount:1;        // Dismount SD
    uint8_t micok:1;             // We see sound
    uint8_t micon:1;             // Sounds required
+   uint8_t button:1;            // Last button state
 } b;
 const char sd_mount[] = "/sd";
 char rgbsd = 0;                 // Colour for SD card
 const char *cardstatus = NULL;  // Status of SD card
 uint64_t sdsize = 0,            // SD card data
    sdfree = 0;
+FILE *volatile sdfile = NULL;
 
 static httpd_handle_t webserver = NULL;
 
@@ -146,7 +148,7 @@ web_root (httpd_req_t * req)
    return revk_web_foot (req, 0, 1, NULL);
 }
 
-SemaphoreHandle_t audio_mutex = NULL;
+SemaphoreHandle_t sd_mutex = NULL;
 
 void
 sd_task (void *arg)
@@ -267,15 +269,35 @@ sd_task (void *arg)
       b.doformat = 0;
       while (!b.doformat && !b.dodismount && !b.die)
       {
-         FILE *o = NULL;
-         char filename[100];
          while (!b.doformat && !b.dodismount)
          {
-            rgbsd = (o ? 'G' : 'Y');
+            rgbsd = (sdfile ? 'G' : 'Y');
             if (!(b.sdpresent = revk_gpio_get (sdcd)))
             {                   // card removed
                b.dodismount = 1;
                break;
+            }
+            if (b.micon && !sdfile)
+            {                   // Start file
+               FILE *o = fopen ("TODO.WAV", "w");
+               if (!o)
+                  ESP_LOGE (TAG, "Failed to open file");
+               else
+               {
+                  ESP_LOGI (TAG, "Recording opened");
+                  // TODO header
+                  sdfile = o;
+               }
+            }
+            if (!b.micon && sdfile)
+            {                   // End file
+               ESP_LOGI (TAG, "Recording closed");
+               xSemaphoreTake (sd_mutex, portMAX_DELAY);
+               FILE *o = sdfile;
+               sdfile = NULL;
+               xSemaphoreGive (sd_mutex);
+               // TODO rewind/size
+               fclose (o);
             }
             // TODO open file and write data
             sleep (1);
@@ -378,10 +400,11 @@ mic_task (void *arg)
          continue;
       if (*(int32_t *) micraw)
          b.micok = 1;
-      if (!b.micon)
+      if (!b.micon || !sdfile)
          continue;              // Not needed
-      // TODO
-
+      xSemaphoreTake (sd_mutex, portMAX_DELAY);
+      fwrite (micraw, bytes * samples, 1, sdfile);
+      xSemaphoreGive (sd_mutex);
    }
    vTaskDelete (NULL);
 }
@@ -580,8 +603,8 @@ spk_task (void *arg)
 void
 app_main ()
 {
-   audio_mutex = xSemaphoreCreateBinary ();
-   xSemaphoreGive (audio_mutex);
+   sd_mutex = xSemaphoreCreateBinary ();
+   xSemaphoreGive (sd_mutex);
    revk_boot (&app_callback);
    revk_start ();
 
@@ -600,11 +623,63 @@ app_main ()
       revk_web_settings_add (webserver);
       register_get_uri ("/", web_root);
    }
+   led_strip_handle_t led_status = NULL;
+   if (rgbstatus.set)
+   {
+      led_strip_config_t strip_config = {
+         .strip_gpio_num = rgbstatus.num,
+         .max_leds = 1,
+         .color_component_format = LED_STRIP_COLOR_COMPONENT_FMT_GRB,
+         .led_model = LED_MODEL_WS2812, // LED strip model
+         .flags.invert_out = rgbstatus.invert,
+      };
+      led_strip_rmt_config_t rmt_config = {
+         .clk_src = RMT_CLK_SRC_DEFAULT,        // different clock source can lead to different power consumption
+         .resolution_hz = 10 * 1000 * 1000,     // 10 MHz
+      };
+      REVK_ERR_CHECK (led_strip_new_rmt_device (&strip_config, &rmt_config, &led_status));
+      if (led_status)
+         REVK_ERR_CHECK (led_strip_clear (led_status));
+   }
+   led_strip_handle_t led_record = NULL;
+   if (rgbrecord.set)
+   {
+      led_strip_config_t strip_config = {
+         .strip_gpio_num = rgbrecord.num,
+         .max_leds = 1,
+         .color_component_format = LED_STRIP_COLOR_COMPONENT_FMT_GRB,
+         .led_model = LED_MODEL_WS2812, // LED strip model
+         .flags.invert_out = rgbrecord.invert,
+      };
+      led_strip_rmt_config_t rmt_config = {
+         .clk_src = RMT_CLK_SRC_DEFAULT,        // different clock source can lead to different power consumption
+         .resolution_hz = 10 * 1000 * 1000,     // 10 MHz
+      };
+      REVK_ERR_CHECK (led_strip_new_rmt_device (&strip_config, &rmt_config, &led_record));
+      if (led_record)
+         REVK_ERR_CHECK (led_strip_clear (led_record));
+   }
    // Buttons and LEDs
+   revk_gpio_input (button);
    while (1)
    {
       usleep (100000);
-      // TODO
-
+      uint8_t press = revk_gpio_get (button);
+      if (press != b.button)
+      {
+         b.button = press;
+         if (press)
+            b.micon = 1 - b.micon;
+      }
+      if (led_status)
+      {
+         revk_led (led_status, 0, 255, revk_blinker ());
+         REVK_ERR_CHECK (led_strip_refresh (led_status));
+      }
+      if (led_record)
+      {
+         revk_led (led_record, 0, 255, revk_rgb (sdrgb));
+         REVK_ERR_CHECK (led_strip_refresh (led_record));
+      }
    }
 }
