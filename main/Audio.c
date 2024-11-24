@@ -294,7 +294,34 @@ sd_task (void *arg)
             if (b.micon && !sdfile)
             {                   // Start file
                char filename[100];
-               sprintf (filename, "%s/TODO.WAV", sd_mount);
+               int fileno = 0;
+               DIR *dir = opendir (sd_mount);
+               if (dir)
+               {
+                  struct dirent *entry;
+                  while ((entry = readdir (dir)))
+                     if (entry->d_type == DT_REG)
+                     {
+                        const char *e = strrchr (entry->d_name, '.');
+                        if (!e)
+                           continue;
+                        if (strcasecmp (e, ".wav"))
+                           continue;
+                        int n = atoi (entry->d_name);
+                        if (n > fileno)
+                           fileno = n;
+                     }
+                  closedir (dir);
+               }
+               fileno++;
+               time_t now = time (0);
+               struct tm t;
+               localtime_r (&now, &t);
+               if (t.tm_year >= 100)
+                  sprintf (filename, "%s/%04d-%04d%02d%02dT%02d%02d%02d.WAV", sd_mount, fileno, t.tm_year + 1900, t.tm_mon + 1,
+                           t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec);
+               else
+                  sprintf (filename, "%s/%04d.WAV", sd_mount, fileno);
                FILE *o = fopen (filename, "w+");
                if (!o)
                   ESP_LOGE (TAG, "Failed to open file %s", filename);
@@ -354,18 +381,15 @@ sd_task (void *arg)
             }
             if (sdfile)
             {
-               if (sdin == sdout)
-                  ESP_LOGE (TAG, "Caught up");
-               else
-                  while (sdin != sdout)
-                  {
-                     uint64_t a = esp_timer_get_time ();
-                     fwrite (micaudio[sdout], 1, micsamples * micbytes, sdfile);
-                     uint64_t b = esp_timer_get_time ();
-                     if ((b - a) / 1000ULL > MICMS)
-                        ESP_LOGE (TAG, "Wrote block %d, %ld bytes, %lldms", sdout, micsamples * micbytes, (b - a) / 1000ULL);
-                     sdout = (sdout + 1) % MICQUEUE;
-                  }
+               while (sdin != sdout)
+               {
+                  uint64_t a = esp_timer_get_time ();
+                  fwrite (micaudio[sdout], 1, micsamples * micbytes, sdfile);
+                  uint64_t b = esp_timer_get_time ();
+                  if ((b - a) / 1000ULL > MICMS)
+                     ESP_LOGE (TAG, "Wrote block %d, %ld bytes, %lldms", sdout, micsamples * micbytes, (b - a) / 1000ULL);
+                  sdout = (sdout + 1) % MICQUEUE;
+               }
             }
             usleep (MICMS * 1000);
          }
