@@ -8,9 +8,6 @@
 [submodule "PCB/PCBCase"]
 	path = PCB/PCBCase
 	url = https://github.com/revk/PCBCase
-[submodule "ESP32-SIP"]
-	path = ESP32-SIP
-	url = https://github.com/revk/ESP32-SIP.git
 [submodule "components/ESP32-SIP"]
 	path = components/ESP32-SIP
 	url = https://github.com/revk/ESP32-SIP.git
