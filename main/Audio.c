@@ -117,6 +117,11 @@ app_callback (int client, const char *prefix, const char *target, const char *su
       dtmfmessage = jo_strdup (j);
       return NULL;
    }
+   if (!strcasecmp (suffix, "format"))
+   {
+      b.doformat = 1;
+      return NULL;
+   }
    return NULL;
 }
 
