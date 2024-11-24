@@ -32,4 +32,8 @@ u8	dtmf.level	50	.unit="%",.live=1		// DTMF Level
 u8	dtmf.tone	0.100	.unit="s",.live=1,.decimal=3		// DTMF Tone time
 u8	dtmf.gap	0.100	.unit="s",.live=1,.decimal=3		// DTMF Gap time
 
-bit	wifidebug	1		// Keep WiFi one when SD card inserted
+s	sip.host		.hide=1	// SIP server hostname
+s	sip.user		.hide=1	// SIP registration username
+s	sip.pass		.hide=1	// SIP registration password
+
+bit	wifidebug	1	.hide=1	// Keep WiFi on when SD card inserted

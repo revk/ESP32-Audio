@@ -16,6 +16,7 @@ static const char TAG[] = "Audio";
 #include "math.h"
 #include "esp_vfs_fat.h"
 #include <sys/dirent.h>
+#include <sip.h>
 
 typedef int16_t audio_t;
 #define	audio_max	32767
@@ -128,6 +129,11 @@ app_callback (int client, const char *prefix, const char *target, const char *su
 void
 revk_web_extra (httpd_req_t * req, int page)
 {
+	      revk_web_setting (req, NULL, "micgain");
+	      revk_web_setting (req, NULL, "siphost");
+	      revk_web_setting (req, NULL, "sipuser");
+	      revk_web_setting (req, NULL, "sippass");
+	      revk_web_setting (req, NULL, "wifidebug");
 }
 
 static void
