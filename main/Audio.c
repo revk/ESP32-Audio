@@ -492,7 +492,7 @@ mic_task (void *arg)
       vTaskDelete (NULL);
       return;
    }
-   ESP_LOGE (TAG, "Mic started, %ld*2*%d bits at %ldHz - mapped to 2*%d bits", micsamples, rawbytes * 4, micrate,micbytes*4);
+   ESP_LOGE (TAG, "Mic started, %ld*2*%d bits at %ldHz - mapped to 2*%d bits", micsamples, rawbytes * 4, micrate, micbytes * 4);
    while (1)
    {
       size_t n = 0;
@@ -771,10 +771,13 @@ app_main ()
 
    // Buttons and LEDs
    revk_gpio_input (button);
-   revk_gpio_input (charging);
+   revk_gpio_input (charging);  // On, off, or flashing
+   uint8_t charge = 0;
    while (1)
    {
       usleep (100000);
+      charge = (charge << 1) | revk_gpio_get (charging);
+      revk_blink (0, 0, charge == 0xFF ? "Y" : !charge ? "R" : "G");
       uint8_t press = revk_gpio_get (button);
       if (press != b.button)
       {
