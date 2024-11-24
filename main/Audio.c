@@ -427,8 +427,11 @@ mic_task (void *arg)
    i2s_chan_handle_t i = { 0 };
    i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG (I2S_NUM_AUTO, I2S_ROLE_MASTER);
    err = i2s_new_channel (&chan_cfg, NULL, &i);
-   uint8_t rawbytes = (micws.set ? 8 : 4);      // No WS means PDM (16 bit)
-   micbytes = 4;
+   // TDK ICS 43434 is 32 bits, but we can work as 24 bits
+   // TDK PDM is 16 bits
+   // We save as 16 bits if PDM or if micgain set), else, if TRDK ICS 43434 and micgain is 0 then we save as 24bits
+   uint8_t rawbytes = (micws.set ? micgain ? 8 : 6 : 4);        // No WS means PDM (16 bit)
+   micbytes = (micws.set ? micgain ? 4 : 6 : 4);        // No WS means PDM (16 bit)
    micsamples = micrate * MICMS / 1000;
    for (int i = 0; i < MICQUEUE; i++)
       micaudio[i] = mallocspi (micbytes * micsamples);
@@ -442,7 +445,7 @@ mic_task (void *arg)
          .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG (micrate),
          .slot_cfg =
             I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG ((rawbytes == 8 ? I2S_DATA_BIT_WIDTH_32BIT : rawbytes ==
-                                                 6 ? I2S_DATA_BIT_WIDTH_24BIT : I2S_DATA_BIT_WIDTH_16BIT), I2S_SLOT_MODE_STEREO),
+                                                  6 ? I2S_DATA_BIT_WIDTH_24BIT : I2S_DATA_BIT_WIDTH_16BIT), I2S_SLOT_MODE_STEREO),
          .gpio_cfg = {
                       .mclk = I2S_GPIO_UNUSED,
                       .bclk = micclock.num,
@@ -489,7 +492,7 @@ mic_task (void *arg)
       vTaskDelete (NULL);
       return;
    }
-   ESP_LOGE (TAG, "Mic started, %ld*%d bits at %ldHz", micsamples, rawbytes * 8, micrate);
+   ESP_LOGE (TAG, "Mic started, %ld*2*%d bits at %ldHz - mapped to 2*%d bits", micsamples, rawbytes * 4, micrate,micbytes*4);
    while (1)
    {
       size_t n = 0;

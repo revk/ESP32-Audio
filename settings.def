@@ -8,7 +8,7 @@ gpio	mic.data	1		// Microphone Data / SD
 gpio	mic.clock	11		// Microphone Clock / SCK
 gpio	mic.ws		0		// Microphone WS (not set for PDM)
 u32	mic.rate	44100 .unit="Hz"	// Microphone Input rate
-u8	mic.gain	16		// kMicrophone Multiply input
+u8	mic.gain	16		// Microphone Multiply input (set 0 for 24 bit raw)
 
 gpio	sd.ss		12		// MicroSD SS
 gpio	sd.mosi		13		// MicroSD MOSI
