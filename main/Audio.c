@@ -72,7 +72,6 @@ struct
    uint8_t sdpresent:1;         // SD present
    uint8_t doformat:1;          // SD format
    uint8_t dodismount:1;        // Dismount SD
-   uint8_t micok:1;             // We see sound
    uint8_t micon:1;             // Sounds required
    uint8_t button:1;            // Last button state
 } b;
@@ -82,8 +81,9 @@ const char *cardstatus = NULL;  // Status of SD card
 uint64_t sdsize = 0,            // SD card data
    sdfree = 0;
 FILE *volatile sdfile = NULL;
+#define	MICMS		20
 #define	MICQUEUE	32
-uint32_t micbytes = 0;
+uint8_t micbytes = 0;
 uint32_t micsamples = 0;
 uint8_t *micaudio[MICQUEUE] = { 0 };
 
@@ -175,7 +175,8 @@ sd_task (void *arg)
    revk_gpio_output (sdss, 0);  // Bodge for faster SD card access in ESP IDF V5+
 #endif
    sdmmc_host_t host = SDSPI_HOST_DEFAULT ();
-   host.max_freq_khz = SDMMC_FREQ_PROBING;
+   //host.max_freq_khz = SDMMC_FREQ_PROBING;
+   host.max_freq_khz = 20000;;
    spi_bus_config_t bus_cfg = {
       .mosi_io_num = sdmosi.num,
       .miso_io_num = sdmiso.num,
@@ -361,11 +362,12 @@ sd_task (void *arg)
                      uint64_t a = esp_timer_get_time ();
                      fwrite (micaudio[sdout], 1, micsamples * micbytes, sdfile);
                      uint64_t b = esp_timer_get_time ();
-                     ESP_LOGE (TAG, "Wrote block %d, %ld bytes, %lldms", sdout, micsamples * micbytes, (b - a) / 1000ULL);
+                     if ((b - a) / 1000ULL > MICMS)
+                        ESP_LOGE (TAG, "Wrote block %d, %ld bytes, %lldms", sdout, micsamples * micbytes, (b - a) / 1000ULL);
                      sdout = (sdout + 1) % MICQUEUE;
                   }
             }
-            usleep (100000);
+            usleep (MICMS * 1000);
          }
          rgbsd = 'B';
          // All done, unmount partition and disable SPI peripheral
@@ -401,16 +403,22 @@ mic_task (void *arg)
    i2s_chan_handle_t i = { 0 };
    i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG (I2S_NUM_AUTO, I2S_ROLE_MASTER);
    err = i2s_new_channel (&chan_cfg, NULL, &i);
-   micbytes = (micws.set ? 8 : 4);      // No WS means PDM (16 bit)
-   micsamples = micrate / 10;
+   uint8_t rawbytes = (micws.set ? 8 : 4);      // No WS means PDM (16 bit)
+   micbytes = 4;
+   micsamples = micrate * MICMS / 1000;
    for (int i = 0; i < MICQUEUE; i++)
       micaudio[i] = mallocspi (micbytes * micsamples);
+   uint8_t *raw = NULL;
+   if (micbytes != rawbytes)
+      raw = mallocspi (rawbytes * micsamples);
    if (micws.set)
    {                            // 24 bit Philips format
       ESP_LOGE (TAG, "Mic init CLK %d DAT %d WS %d", micclock.num, micdata.num, micws.num);
       i2s_std_config_t cfg = {
          .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG (micrate),
-         .slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG (I2S_DATA_BIT_WIDTH_32BIT, I2S_SLOT_MODE_STEREO),
+         .slot_cfg =
+            I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG (rawbytes == 8 ? I2S_DATA_BIT_WIDTH_32BIT : rawbytes ==
+                                                 6 ? I2S_DATA_BIT_WIDTH_24BIT : I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_STEREO),
          .gpio_cfg = {
                       .mclk = I2S_GPIO_UNUSED,
                       .bclk = micclock.num,
@@ -425,7 +433,7 @@ mic_task (void *arg)
                       },
       };
       cfg.slot_cfg.slot_mask = I2S_STD_SLOT_BOTH;
-      if (micbytes == 6)
+      if (rawbytes == 6)
          cfg.clk_cfg.mclk_multiple = 384;
       if (!err)
          err = i2s_channel_init_std_mode (i, &cfg);
@@ -457,15 +465,26 @@ mic_task (void *arg)
       vTaskDelete (NULL);
       return;
    }
-   ESP_LOGE (TAG, "Mic started, %ld*%ld bits at %ldHz", micsamples, micbytes * 8, micrate);
+   ESP_LOGE (TAG, "Mic started, %ld*%d bits at %ldHz", micsamples, rawbytes * 8, micrate);
    while (1)
    {
       size_t n = 0;
-      i2s_channel_read (i, micaudio[sdin], micbytes * micsamples, &n, 100);
-      if (n < micbytes * micsamples)
+      i2s_channel_read (i, raw ? : micaudio[sdin], rawbytes * micsamples, &n, 100);
+      if (n < rawbytes * micsamples)
          continue;
-      if (*(int32_t *) micaudio[sdin])
-         b.micok = 1;
+      if (rawbytes != micbytes)
+      {                         // Copy
+         if (rawbytes != 8 || micbytes != 4)
+         {
+            ESP_LOGE (TAG, "Not coded %d->%d", rawbytes, micbytes);
+            continue;
+         }
+         int32_t *i = (void *) raw;
+         int16_t *o = (void *) micaudio[sdin];
+         int s = micsamples * 2;
+         while (s--)
+            *o++ = (micgain ** i++) / 65536;
+      }
       if (!b.micon || !sdfile)
          continue;              // Not needed
       if ((sdin + 1) % MICQUEUE == sdout)
@@ -734,7 +753,12 @@ app_main ()
       {
          b.button = press;
          if (press)
-            b.micon = 1 - b.micon;
+         {
+            if (!b.micon && !b.sdpresent)
+               ESP_LOGE (TAG, "No card");
+            else
+               b.micon = 1 - b.micon;
+         }
       }
       if (led_status)
       {
