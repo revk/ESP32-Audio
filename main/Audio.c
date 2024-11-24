@@ -441,8 +441,8 @@ mic_task (void *arg)
       i2s_std_config_t cfg = {
          .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG (micrate),
          .slot_cfg =
-            I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG (rawbytes == 8 ? I2S_DATA_BIT_WIDTH_32BIT : rawbytes ==
-                                                 6 ? I2S_DATA_BIT_WIDTH_24BIT : I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_STEREO),
+            I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG ((rawbytes == 8 ? I2S_DATA_BIT_WIDTH_32BIT : rawbytes ==
+                                                 6 ? I2S_DATA_BIT_WIDTH_24BIT : I2S_DATA_BIT_WIDTH_16BIT), I2S_SLOT_MODE_STEREO),
          .gpio_cfg = {
                       .mclk = I2S_GPIO_UNUSED,
                       .bclk = micclock.num,
