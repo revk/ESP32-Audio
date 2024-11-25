@@ -130,10 +130,12 @@ void
 revk_web_extra (httpd_req_t * req, int page)
 {
    revk_web_setting (req, NULL, "micgain");
+   revk_web_setting (req, NULL, "micstereo");
+   revk_web_setting (req, NULL, "micright");
    revk_web_setting (req, NULL, "siphost");
    revk_web_setting (req, NULL, "sipuser");
    revk_web_setting (req, NULL, "sippass");
-   revk_web_setting (req, NULL, "wifidebug");
+   revk_web_setting (req, NULL, "wifilock");
 }
 
 static void
@@ -174,12 +176,8 @@ sd_task (void *arg)
    esp_err_t e = 0;
    revk_gpio_input (sdcd);
    sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT ();
-#if 0
-   slot_config.gpio_cs = sdss.num;      // use SS pin
-#else
    slot_config.gpio_cs = -1;    // don't use SS pin
-   revk_gpio_output (sdss, 0);  // Bodge for faster SD card access in ESP IDF V5+
-#endif
+   revk_gpio_output (sdss, 0);  // We assume only one card
    sdmmc_host_t host = SDSPI_HOST_DEFAULT ();
    //host.max_freq_khz = SDMMC_FREQ_PROBING;
    host.max_freq_khz = 20000;;
@@ -235,14 +233,19 @@ sd_task (void *arg)
             jo_string (j, "error", cardstatus = "Card not present");
             revk_info ("SD", &j);
             rgbsd = 'M';
-            revk_enable_wifi ();
-            revk_enable_ap ();
+            if (wifilock)
+            {
+               revk_enable_ap ();
+               revk_enable_settings ();
+            }
             while (!(b.sdpresent = revk_gpio_get (sdcd)))
                sleep (1);
          }
-         if (!wifidebug)
-            revk_disable_wifi ();
-         revk_disable_ap ();
+         if (wifilock)
+         {
+            revk_disable_ap ();
+            revk_disable_settings ();
+         }
          b.sdpresent = 1;
       } else if (b.dodismount)
       {
@@ -410,6 +413,7 @@ sd_task (void *arg)
          }
       }
    }
+   revk_gpio_set (sdss, 1);
    vTaskDelete (NULL);
 }
 
@@ -430,9 +434,9 @@ mic_task (void *arg)
       return j;
    }
    esp_err_t err;
-   i2s_chan_handle_t i = { 0 };
+   i2s_chan_handle_t rx_handle = { 0 };
    i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG (I2S_NUM_AUTO, I2S_ROLE_MASTER);
-   err = i2s_new_channel (&chan_cfg, NULL, &i);
+   err = i2s_new_channel (&chan_cfg, NULL, &rx_handle);
    // TDK ICS 43434 is 32 bits, but we can work as 24 bits
    // TDK PDM is 16 bits
    // We save as 16 bits if PDM or if micgain set), else, if TRDK ICS 43434 and micgain is 0 then we save as 24bits
@@ -451,7 +455,8 @@ mic_task (void *arg)
          .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG (micrate),
          .slot_cfg =
             I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG ((rawbytes == 8 ? I2S_DATA_BIT_WIDTH_32BIT : rawbytes ==
-                                                  6 ? I2S_DATA_BIT_WIDTH_24BIT : I2S_DATA_BIT_WIDTH_16BIT), I2S_SLOT_MODE_STEREO),
+                                                  6 ? I2S_DATA_BIT_WIDTH_24BIT : I2S_DATA_BIT_WIDTH_16BIT),
+                                                 I2S_SLOT_MODE_STEREO),
          .gpio_cfg = {
                       .mclk = I2S_GPIO_UNUSED,
                       .bclk = micclock.num,
@@ -469,7 +474,7 @@ mic_task (void *arg)
       if (rawbytes == 6)
          cfg.clk_cfg.mclk_multiple = 384;
       if (!err)
-         err = i2s_channel_init_std_mode (i, &cfg);
+         err = i2s_channel_init_std_mode (rx_handle, &cfg);
    } else
    {                            // PDM 16 bit
       ESP_LOGE (TAG, "Mic init PDM CLK %d DAT %d", micclock.num, micdata.num);
@@ -485,11 +490,11 @@ mic_task (void *arg)
       };
       cfg.slot_cfg.slot_mask = I2S_PDM_SLOT_BOTH;
       if (!err)
-         err = i2s_channel_init_pdm_rx_mode (i, &cfg);
+         err = i2s_channel_init_pdm_rx_mode (rx_handle, &cfg);
    }
    gpio_pulldown_en (micdata.num);
    if (!err)
-      err = i2s_channel_enable (i);
+      err = i2s_channel_enable (rx_handle);
    if (err)
    {
       ESP_LOGE (TAG, "Mic I2S failed");
@@ -499,10 +504,10 @@ mic_task (void *arg)
       return;
    }
    ESP_LOGE (TAG, "Mic started, %ld*2*%d bits at %ldHz - mapped to 2*%d bits", micsamples, rawbytes * 4, micrate, micbytes * 4);
-   while (1)
+   while (!b.die)
    {
       size_t n = 0;
-      i2s_channel_read (i, raw ? : micaudio[sdin], rawbytes * micsamples, &n, 100);
+      i2s_channel_read (rx_handle, raw ? : micaudio[sdin], rawbytes * micsamples, &n, 100);
       if (n < rawbytes * micsamples)
          continue;
       if (rawbytes != micbytes)
@@ -532,6 +537,7 @@ mic_task (void *arg)
       else
          sdin = (sdin + 1) % MICQUEUE;
    }
+   i2s_channel_disable (rx_handle);
    vTaskDelete (NULL);
 }
 
@@ -601,7 +607,7 @@ spk_task (void *arg)
          return tablesin (spkrate / 2 - p);
       return sin4[p];
    }
-   while (1)
+   while (!b.die)
    {
       size_t l = 0;
       if (!morsemessagep && !dtmfmessagep && morsemessage)
@@ -722,7 +728,7 @@ spk_task (void *arg)
          memset (samples, 0, sizeof (audio_t) * SAMPLES);       // Silence
       i2s_channel_write (tx_handle, samples, sizeof (audio_t) * SAMPLES, &l, 100);
    }
-
+   i2s_channel_disable (tx_handle);
    vTaskDelete (NULL);
 }
 

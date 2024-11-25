@@ -9,6 +9,8 @@ gpio	mic.clock	11		// Microphone Clock / SCK
 gpio	mic.ws		0		// Microphone WS (not set for PDM)
 u32	mic.rate	44100 .unit="Hz"	// Microphone Input rate
 u8	mic.gain	4		// Microphone Multiply input (set 0 for 24 bit raw)
+bit	mic.stereo	1		// Microphone Stereo
+bit	mic.right			// Microphone use right channel
 
 gpio	sd.ss		12		// MicroSD SS
 gpio	sd.mosi		13		// MicroSD MOSI
@@ -36,4 +38,4 @@ s	sip.host		.hide=1	// SIP server hostname
 s	sip.user		.hide=1	// SIP registration username
 s	sip.pass		.hide=1	// SIP registration password
 
-bit	wifidebug	1	.hide=1	// Keep WiFi on when SD card inserted
+bit	wifilock	1	.hide=1	// Lock down settings/AP mode when SD card inserted
