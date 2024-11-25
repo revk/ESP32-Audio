@@ -571,6 +571,8 @@ mic_task (void *arg)
 void
 spk_task (void *arg)
 {
+   ESP_LOGE (TAG, "Spk init BCLK %d DAT %d LR %d", spkbclk.num, spkdata.num, spklrc.num);
+   revk_gpio_output (spkpwr, 1);
    esp_err_t e = 0;
    i2s_chan_handle_t tx_handle;
    i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG (I2S_NUM_AUTO, I2S_ROLE_MASTER);
@@ -823,8 +825,11 @@ app_main ()
    while (!b.die)
    {
       usleep (100000);
-      charge = (charge << 1) | revk_gpio_get (charging);
-      revk_blink (0, 0, charge == 0xFF ? "Y" : !charge ? "R" : "G");
+      if (charging.set)
+      {
+         charge = (charge << 1) | revk_gpio_get (charging);
+         revk_blink (0, 0, charge == 0xFF ? "Y" : !charge ? "R" : "G");
+      }
       if (revk_gpio_get (button))
       {                         // Pressed
          if (++press == 30 && rtc_gpio_is_valid_gpio (button.num))
