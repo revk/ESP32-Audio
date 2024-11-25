@@ -11,6 +11,7 @@ static const char TAG[] = "Audio";
 #include <driver/i2c.h>
 #include <driver/i2s_std.h>
 #include <driver/i2s_pdm.h>
+#include <driver/rtc_io.h>
 #include <esp_http_server.h>
 #include "fft.h"
 #include "math.h"
@@ -74,7 +75,9 @@ struct
    uint8_t doformat:1;          // SD format
    uint8_t dodismount:1;        // Dismount SD
    uint8_t micon:1;             // Sounds required
-   uint8_t button:1;            // Last button state
+   uint8_t sip:1;               // In sip mode
+   uint8_t micsip:1;            // Mic in SIP mode
+   uint8_t spksip:1;            // Spk in SIP mode
 } b;
 const char sd_mount[] = "/sd";
 char rgbsd = 0;                 // Colour for SD card
@@ -82,10 +85,12 @@ const char *cardstatus = NULL;  // Status of SD card
 uint64_t sdsize = 0,            // SD card data
    sdfree = 0;
 FILE *volatile sdfile = NULL;
-#define	MICMS		20
+#define	MICMS		100
 #define	MICQUEUE	32
-uint8_t micbytes = 0;
-uint32_t micsamples = 0;
+uint8_t micchannels = 0;        // Channels (1 or 2)
+uint8_t micbytes = 0;           // Bytes per channel (2, 3, or 4)
+uint32_t micsamples = 0;        // Samples per collection
+uint32_t micfreq = 0;           // Actual sample rate
 uint8_t *micaudio[MICQUEUE] = { 0 };
 
 volatile uint8_t sdin = 0,
@@ -165,6 +170,9 @@ web_root (httpd_req_t * req)
    if (revk_link_down ())
       return revk_web_settings (req);   // Direct to web set up
    revk_web_head (req, "Audio");
+   revk_web_send (req, "<h1>%s</h1>", *hostname ? hostname : appname);
+   if (wifilock && b.sdpresent)
+      revk_web_send (req, "<p>For security reasons, settings are disabled whilst the SD card is inserted</p>");
    return revk_web_foot (req, 0, 1, NULL);
 }
 
@@ -337,7 +345,7 @@ sd_task (void *arg)
                else
                {
                   ESP_LOGI (TAG, "Recording opened %s", filename);
-                  uint32_t onehour = 3600 * micrate * micbytes;
+                  uint32_t onehour = 3600 * micfreq * micchannels * micbytes;
                   struct
                   {
                      char filetypeblocid[4];
@@ -360,11 +368,11 @@ sd_task (void *arg)
                      "fmt ",    // Chunk
                      16,
                      1,         // PCM
-                     2,         // Stereo
-                     micrate,
-                     micrate * micbytes,
-                     micbytes,
-                     micbytes * 4,      // bits
+                     micchannels,
+                     micfreq,
+                     micfreq * micchannels * micbytes,
+                     micchannels * micbytes,
+                     micbytes * 8,      // bits
                      "data",    // Data block
                      onehour,
                   };
@@ -393,14 +401,14 @@ sd_task (void *arg)
                while (sdin != sdout)
                {
                   uint64_t a = esp_timer_get_time ();
-                  fwrite (micaudio[sdout], 1, micsamples * micbytes, sdfile);
+                  fwrite (micaudio[sdout], 1, micsamples * micchannels * micbytes, sdfile);
                   uint64_t b = esp_timer_get_time ();
-                  if ((b - a) / 1000ULL > MICMS)
-                     ESP_LOGE (TAG, "Wrote block %d, %ld bytes, %lldms", sdout, micsamples * micbytes, (b - a) / 1000ULL);
+                  ESP_LOGE (TAG, "Wrote block %d, %ld bytes, %lldms", sdout, micsamples * micchannels * micbytes,
+                            (b - a) / 1000ULL);
                   sdout = (sdout + 1) % MICQUEUE;
                }
             }
-            usleep (MICMS * 1000);
+            usleep (10000);
          }
          rgbsd = 'B';
          // All done, unmount partition and disable SPI peripheral
@@ -414,6 +422,8 @@ sd_task (void *arg)
       }
    }
    revk_gpio_set (sdss, 1);
+   rtc_gpio_set_direction_in_sleep (sdss.num, RTC_GPIO_MODE_OUTPUT_ONLY);
+   rtc_gpio_set_level (sdss.num, 1 - sdss.invert);
    vTaskDelete (NULL);
 }
 
@@ -437,107 +447,137 @@ mic_task (void *arg)
    i2s_chan_handle_t rx_handle = { 0 };
    i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG (I2S_NUM_AUTO, I2S_ROLE_MASTER);
    err = i2s_new_channel (&chan_cfg, NULL, &rx_handle);
-   // TDK ICS 43434 is 32 bits, but we can work as 24 bits
-   // TDK PDM is 16 bits
-   // We save as 16 bits if PDM or if micgain set), else, if TRDK ICS 43434 and micgain is 0 then we save as 24bits
-   uint8_t rawbytes = (micws.set ? micgain ? 8 : 6 : 4);        // No WS means PDM (16 bit)
-   micbytes = (micws.set ? micgain ? 4 : 6 : 4);        // No WS means PDM (16 bit)
-   micsamples = micrate * MICMS / 1000;
-   for (int i = 0; i < MICQUEUE; i++)
-      micaudio[i] = mallocspi (micbytes * micsamples);
-   uint8_t *raw = NULL;
-   if (micbytes != rawbytes)
-      raw = mallocspi (rawbytes * micsamples);
-   if (micws.set)
-   {                            // 24 bit Philips format
-      ESP_LOGE (TAG, "Mic init CLK %d DAT %d WS %d", micclock.num, micdata.num, micws.num);
-      i2s_std_config_t cfg = {
-         .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG (micrate),
-         .slot_cfg =
-            I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG ((rawbytes == 8 ? I2S_DATA_BIT_WIDTH_32BIT : rawbytes ==
-                                                  6 ? I2S_DATA_BIT_WIDTH_24BIT : I2S_DATA_BIT_WIDTH_16BIT),
-                                                 I2S_SLOT_MODE_STEREO),
-         .gpio_cfg = {
-                      .mclk = I2S_GPIO_UNUSED,
-                      .bclk = micclock.num,
-                      .ws = micws.num,
-                      .dout = I2S_GPIO_UNUSED,
-                      .din = micdata.num,
-                      .invert_flags = {
-                                       .mclk_inv = false,
-                                       .bclk_inv = micclock.invert,
-                                       .ws_inv = micws.invert,
-                                       },
-                      },
-      };
-      cfg.slot_cfg.slot_mask = I2S_STD_SLOT_BOTH;
-      if (rawbytes == 6)
-         cfg.clk_cfg.mclk_multiple = 384;
-      if (!err)
-         err = i2s_channel_init_std_mode (rx_handle, &cfg);
-   } else
-   {                            // PDM 16 bit
-      ESP_LOGE (TAG, "Mic init PDM CLK %d DAT %d", micclock.num, micdata.num);
-      i2s_pdm_rx_config_t cfg = {
-         .clk_cfg = I2S_PDM_RX_CLK_DEFAULT_CONFIG (micrate),
-         .slot_cfg = I2S_PDM_RX_SLOT_DEFAULT_CONFIG (I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_MONO),
-         .gpio_cfg = {
-                      .clk = micclock.num,
-                      .din = micdata.num,
-                      .invert_flags = {
-                                       .clk_inv = micclock.invert}
-                      }
-      };
-      cfg.slot_cfg.slot_mask = I2S_PDM_SLOT_BOTH;
-      if (!err)
-         err = i2s_channel_init_pdm_rx_mode (rx_handle, &cfg);
-   }
-   gpio_pulldown_en (micdata.num);
-   if (!err)
-      err = i2s_channel_enable (rx_handle);
-   if (err)
-   {
-      ESP_LOGE (TAG, "Mic I2S failed");
-      jo_t j = e (err, "Failed init I2S");
-      revk_error ("i2s", &j);
-      vTaskDelete (NULL);
-      return;
-   }
-   ESP_LOGE (TAG, "Mic started, %ld*2*%d bits at %ldHz - mapped to 2*%d bits", micsamples, rawbytes * 4, micrate, micbytes * 4);
    while (!b.die)
-   {
-      size_t n = 0;
-      i2s_channel_read (rx_handle, raw ? : micaudio[sdin], rawbytes * micsamples, &n, 100);
-      if (n < rawbytes * micsamples)
-         continue;
-      if (rawbytes != micbytes)
-      {                         // Copy
-         if (rawbytes != 8 || micbytes != 4)
-         {
-            ESP_LOGE (TAG, "Not coded %d->%d", rawbytes, micbytes);
-            continue;
-         }
-         int32_t *i = (void *) raw;
-         int16_t *o = (void *) micaudio[sdin];
-         int s = micsamples * 2;
-         while (s--)
-         {
-            int32_t v = (*i++) / 256 * micgain;
-            if (v > 8388607)
-               v = 8388607;
-            else if (v < -8388608)
-               v = 8388608;
-            *o++ = v / 256;
-         }
+   {                            // Loop here as we restart for SIP on/off
+      uint8_t rawbytes = (micws.set ? micgain ? 4 : 3 : 2);     // No WS means PDM (16 bit)
+      b.micsip = b.sip;
+      if (b.sip)
+      {
+         micfreq = 8000;
+         micchannels = 1;
+         micbytes = 2;
+         micsamples = 160;
+      } else
+      {
+         micfreq = micrate;
+         micchannels = (micstereo ? 2 : 1);
+         micbytes = 2;
+         micsamples = micfreq * MICMS / 1000;
       }
-      if (!b.micon || !sdfile)
-         continue;              // Not needed
-      if ((sdin + 1) % MICQUEUE == sdout)
-         ESP_LOGE (TAG, "Mic overflow");
-      else
-         sdin = (sdin + 1) % MICQUEUE;
+      for (int i = 0; i < MICQUEUE; i++)
+         micaudio[i] = mallocspi (micbytes * micsamples);
+      uint8_t *raw = NULL;
+      if (micbytes != rawbytes)
+         raw = mallocspi (micchannels * rawbytes * micsamples);
+      if (micws.set)
+      {                         // 24 bit Philips format
+         ESP_LOGE (TAG, "Mic init CLK %d DAT %d WS %d", micclock.num, micdata.num, micws.num);
+         i2s_std_config_t cfg = {
+            .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG (micfreq),
+            .slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG ((rawbytes == 4 ? I2S_DATA_BIT_WIDTH_32BIT :        //
+                                                              rawbytes == 3 ? I2S_DATA_BIT_WIDTH_24BIT :        //
+                                                              I2S_DATA_BIT_WIDTH_16BIT),
+                                                             (micchannels == 2 ? I2S_SLOT_MODE_STEREO : I2S_SLOT_MODE_MONO)),
+            .gpio_cfg = {
+                         .mclk = I2S_GPIO_UNUSED,
+                         .bclk = micclock.num,
+                         .ws = micws.num,
+                         .dout = I2S_GPIO_UNUSED,
+                         .din = micdata.num,
+                         .invert_flags = {
+                                          .mclk_inv = false,
+                                          .bclk_inv = micclock.invert,
+                                          .ws_inv = micws.invert,
+                                          },
+                         },
+         };
+         cfg.slot_cfg.slot_mask = (micchannels == 2 ? I2S_STD_SLOT_BOTH : micright ? I2S_STD_SLOT_RIGHT : I2S_STD_SLOT_LEFT);
+         if (rawbytes == 3)
+            cfg.clk_cfg.mclk_multiple = 384;
+         if (!err)
+            err = i2s_channel_init_std_mode (rx_handle, &cfg);
+      } else
+      {                         // PDM 16 bit
+         ESP_LOGE (TAG, "Mic init PDM CLK %d DAT %d", micclock.num, micdata.num);
+         i2s_pdm_rx_config_t cfg = {
+            .clk_cfg = I2S_PDM_RX_CLK_DEFAULT_CONFIG (micfreq),
+            .slot_cfg = I2S_PDM_RX_SLOT_DEFAULT_CONFIG (I2S_DATA_BIT_WIDTH_16BIT,
+                                                        (micchannels == 2 ? I2S_SLOT_MODE_STEREO : I2S_SLOT_MODE_MONO)),
+            .gpio_cfg = {
+                         .clk = micclock.num,
+                         .din = micdata.num,
+                         .invert_flags = {
+                                          .clk_inv = micclock.invert}
+                         }
+         };
+         cfg.slot_cfg.slot_mask = (micchannels == 2 ? I2S_PDM_SLOT_BOTH : micright ? I2S_PDM_SLOT_RIGHT : I2S_PDM_SLOT_LEFT);
+         if (!err)
+            err = i2s_channel_init_pdm_rx_mode (rx_handle, &cfg);
+      }
+      gpio_pulldown_en (micdata.num);
+      if (!err)
+         err = i2s_channel_enable (rx_handle);
+      if (err)
+      {
+         ESP_LOGE (TAG, "Mic I2S failed");
+         jo_t j = e (err, "Failed init I2S");
+         revk_error ("i2s", &j);
+         vTaskDelete (NULL);
+         return;
+      }
+      ESP_LOGE (TAG, "Mic started, %ld*%d*%d bits at %ldHz - mapped to %d*%d bits", micsamples, micchannels, rawbytes * 8, micfreq,
+                micchannels, micbytes * 8);
+      while (!b.die && b.sip == b.micsip)
+      {
+         size_t n = 0;
+         i2s_channel_read (rx_handle, raw ? : micaudio[sdin], micchannels * rawbytes * micsamples, &n, 100);
+         if (n < micchannels * rawbytes * micsamples)
+            continue;
+         if (rawbytes != micbytes)
+         {                      // Process to 16 bits
+            if (rawbytes != 4 || micbytes != 2)
+            {
+               ESP_LOGE (TAG, "Not coded %d->%d", rawbytes, micbytes);
+               continue;
+            }
+            int32_t *i = (void *) raw;
+            int16_t *o = (void *) micaudio[sdin];
+            int16_t get (void)
+            {
+               int32_t v = ((*i++) / 256 * (micgain ? : 1)) / 256;
+               if (v > 32767)
+                  v = 32767;
+               else if (v < -32768)
+                  v = -32768;
+               return v;
+            }
+            int s = micsamples;
+            if (micchannels == 1)
+               while (s--)
+                  *o++ = get ();        // Mono
+            else if (!micright)
+               while (s--)
+               {                // Normal
+                  *o++ = get ();
+                  *o++ = get ();
+            } else
+               while (s--)
+               {                // Swap
+                  int16_t l = get ();
+                  int16_t r = get ();
+                  *o++ = r;
+                  *o++ = l;
+               }
+         }
+         if (!b.micon || !sdfile)
+            continue;           // Not needed
+         if ((sdin + 1) % MICQUEUE == sdout)
+            ESP_LOGE (TAG, "Mic overflow");
+         else
+            sdin = (sdin + 1) % MICQUEUE;
+      }
+      i2s_channel_disable (rx_handle);
    }
-   i2s_channel_disable (rx_handle);
    vTaskDelete (NULL);
 }
 
@@ -791,23 +831,24 @@ app_main ()
    // Buttons and LEDs
    revk_gpio_input (button);
    revk_gpio_input (charging);  // On, off, or flashing
+   uint8_t press = 0;
    uint8_t charge = 0;
-   while (1)
+   while (!b.die)
    {
       usleep (100000);
       charge = (charge << 1) | revk_gpio_get (charging);
       revk_blink (0, 0, charge == 0xFF ? "Y" : !charge ? "R" : "G");
-      uint8_t press = revk_gpio_get (button);
-      if (press != b.button)
-      {
-         b.button = press;
-         if (press)
-         {
-            if (!b.micon && !b.sdpresent)
-               ESP_LOGE (TAG, "No card");
-            else
-               b.micon = 1 - b.micon;
-         }
+      if (revk_gpio_get (button))
+      {                         // Pressed
+         if (++press == 30 && rtc_gpio_is_valid_gpio (button.num))
+            b.die = 1;          // Long press - shutdown (if we can wake up later)
+      } else if (press)
+      {                         // Released
+         if (!b.micon && !b.sdpresent)
+            ESP_LOGE (TAG, "No card");
+         else
+            b.micon = 1 - b.micon;
+         press = 0;
       }
       if (led_status)
       {
@@ -820,4 +861,27 @@ app_main ()
          REVK_ERR_CHECK (led_strip_refresh (led_record));
       }
    }
+   // Go dark
+   if (led_status)
+   {
+      revk_led (led_status, 0, 255, 0);
+      REVK_ERR_CHECK (led_strip_refresh (led_status));
+   }
+   if (led_record)
+   {
+      revk_led (led_record, 0, 255, 0);
+      REVK_ERR_CHECK (led_strip_refresh (led_record));
+   }
+   // Alarm
+   if (button.set && rtc_gpio_is_valid_gpio (button.num))
+   {
+      rtc_gpio_set_direction_in_sleep (button.num, RTC_GPIO_MODE_INPUT_ONLY);
+      rtc_gpio_pullup_en (button.num);
+      rtc_gpio_pulldown_dis (button.num);
+      REVK_ERR_CHECK (esp_sleep_enable_ext0_wakeup (button.num, 1 - button.invert));
+   }
+   revk_disable_wifi ();
+   // Shutdown
+   sleep (1);                   // Allow tasks to end
+   esp_deep_sleep_start ();     // Night night
 }
