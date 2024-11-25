@@ -19,7 +19,7 @@ The software can work with one or two microphones (i.e. mono or stereo). When tw
 
 For I2S output the [MAX98357A](https://www.lcsc.com/datasheet/lcsc_datasheet_2106070436_Analog-Devices-Inc--Maxim-Integrated-MAX98357AEWL-T_C2682619.pdf) is recommended. This can be one chip working as *left*, *right*, or *left+right* channels, or as two chips on the same bus, one as *left* and one as *right*.
 
-* `spkrate` sets the speaker rate, which (for the MAX98357A) can be 8kHz, 16kHz, 32kHz, 44.1kHz, 48kHz, 99.2kHz, or 96kHz.
+* `spkrate` sets the speaker rate, which (for the MAX98357A) can be 8kHz, 16kHz, 32kHz, 44.1kHz, 48kHz, 88.2kHz, or 96kHz.
 
 ## Input processing
 
