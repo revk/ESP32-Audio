@@ -129,11 +129,11 @@ app_callback (int client, const char *prefix, const char *target, const char *su
 void
 revk_web_extra (httpd_req_t * req, int page)
 {
-	      revk_web_setting (req, NULL, "micgain");
-	      revk_web_setting (req, NULL, "siphost");
-	      revk_web_setting (req, NULL, "sipuser");
-	      revk_web_setting (req, NULL, "sippass");
-	      revk_web_setting (req, NULL, "wifidebug");
+   revk_web_setting (req, NULL, "micgain");
+   revk_web_setting (req, NULL, "siphost");
+   revk_web_setting (req, NULL, "sipuser");
+   revk_web_setting (req, NULL, "sippass");
+   revk_web_setting (req, NULL, "wifidebug");
 }
 
 static void
@@ -516,7 +516,14 @@ mic_task (void *arg)
          int16_t *o = (void *) micaudio[sdin];
          int s = micsamples * 2;
          while (s--)
-            *o++ = (micgain ** i++) / 65536;
+         {
+            int32_t v = (*i++) / 256 * micgain;
+            if (v > 8388607)
+               v = 8388607;
+            else if (v < -8388608)
+               v = 8388608;
+            *o++ = v / 256;
+         }
       }
       if (!b.micon || !sdfile)
          continue;              // Not needed
