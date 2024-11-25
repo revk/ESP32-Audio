@@ -465,7 +465,7 @@ mic_task (void *arg)
          micsamples = micfreq * MICMS / 1000;
       }
       for (int i = 0; i < MICQUEUE; i++)
-         micaudio[i] = mallocspi (micbytes * micsamples);
+         micaudio[i] = mallocspi (micchannels * micbytes * micsamples);
       uint8_t *raw = NULL;
       if (micbytes != rawbytes)
          raw = mallocspi (micchannels * rawbytes * micsamples);
@@ -533,7 +533,7 @@ mic_task (void *arg)
          i2s_channel_read (rx_handle, raw ? : micaudio[sdin], micchannels * rawbytes * micsamples, &n, 100);
          if (n < micchannels * rawbytes * micsamples)
             continue;
-         if (rawbytes != micbytes)
+         if (raw)
          {                      // Process to 16 bits
             if (rawbytes != 4 || micbytes != 2)
             {
@@ -542,32 +542,16 @@ mic_task (void *arg)
             }
             int32_t *i = (void *) raw;
             int16_t *o = (void *) micaudio[sdin];
-            int16_t get (void)
+            int s = micchannels * micsamples;
+            while (s--)
             {
                int32_t v = ((*i++) / 256 * (micgain ? : 1)) / 256;
                if (v > 32767)
                   v = 32767;
                else if (v < -32768)
                   v = -32768;
-               return v;
+               *o++ = v;
             }
-            int s = micsamples;
-            if (micchannels == 1)
-               while (s--)
-                  *o++ = get ();        // Mono
-            else if (!micright)
-               while (s--)
-               {                // Normal
-                  *o++ = get ();
-                  *o++ = get ();
-            } else
-               while (s--)
-               {                // Swap
-                  int16_t l = get ();
-                  int16_t r = get ();
-                  *o++ = r;
-                  *o++ = l;
-               }
          }
          if (!b.micon || !sdfile)
             continue;           // Not needed
@@ -577,6 +561,9 @@ mic_task (void *arg)
             sdin = (sdin + 1) % MICQUEUE;
       }
       i2s_channel_disable (rx_handle);
+      free (raw);
+      for (int i = 0; i < MICQUEUE; i++)
+         free (micaudio[i]);
    }
    vTaskDelete (NULL);
 }

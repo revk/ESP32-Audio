@@ -28,12 +28,12 @@ The input from the I2S microphones can be mono or stereo, and can be 16 or 24 bi
 * `micws` is the GPIO for the channel, if not set it is assumed to be PDM mode
 * `micrate` sets the sample rate
 * `micstereo` is set for stereo working
-* `micright` is set for *right* channel when mono, and also reverses *left* and *right* when processing the 24 bits to 16 bits
+* `micright` is set for *right* channel when mono.
 * `micgain` sets the gain for processing 24 bits to 16
 
 When `micgain` is set to `0`, or when using a PDM microphone, the samples (stereo or mono) are used as received, with no processing. This means for PDM mode this is 16 bits per sample, and for ICS-43434 it is 24 bits per sample.
 
-When `micgain` is not `0`, for ICS-43434, the 24 bit samples are processed by multiplying by `micgain/256` and clipping to 16 bits (`-32768` to `32767`). If `micstereo` and `micright` then *left* and *right* are swapped. A `micgain` of `8` works well for speech.
+When `micgain` is not `0`, for ICS-43434, the 24 bit samples are processed by multiplying by `micgain/256` and clipping to 16 bits (`-32768` to `32767`). A `micgain` of `8` works well for speech.
 
 ## Output
 
