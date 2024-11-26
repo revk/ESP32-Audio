@@ -155,13 +155,13 @@ revk_web_extra (httpd_req_t * req, int page)
    if (sdss.set)
    {
       revk_web_setting (req, NULL, "sdrectime");
+      revk_web_setting (req, NULL, "wifilock");
    }
    if (micws.set || spklrc.set)
    {
       revk_web_setting (req, NULL, "siphost");
       revk_web_setting (req, NULL, "sipuser");
       revk_web_setting (req, NULL, "sippass");
-      revk_web_setting (req, NULL, "wifilock");
    }
    if (spklrc.set)
    {
