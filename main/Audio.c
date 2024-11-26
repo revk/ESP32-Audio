@@ -134,13 +134,23 @@ app_callback (int client, const char *prefix, const char *target, const char *su
 void
 revk_web_extra (httpd_req_t * req, int page)
 {
-   revk_web_setting (req, NULL, "micgain");
-   revk_web_setting (req, NULL, "micstereo");
-   revk_web_setting (req, NULL, "micright");
-   revk_web_setting (req, NULL, "siphost");
-   revk_web_setting (req, NULL, "sipuser");
-   revk_web_setting (req, NULL, "sippass");
-   revk_web_setting (req, NULL, "wifilock");
+   if (micws.set)
+   {
+      revk_web_setting (req, NULL, "micgain");
+      revk_web_setting (req, NULL, "micstereo");
+      revk_web_setting (req, NULL, "micright");
+   }
+   if (sdss.set)
+   {
+      revk_web_setting (req, NULL, "sdmaxtime");
+   }
+   if (micws.set || spklrc.set)
+   {
+      revk_web_setting (req, NULL, "siphost");
+      revk_web_setting (req, NULL, "sipuser");
+      revk_web_setting (req, NULL, "sippass");
+      revk_web_setting (req, NULL, "wifilock");
+   }
 }
 
 static void
@@ -298,6 +308,7 @@ sd_task (void *arg)
       }
       rgbsd = 'Y';              // Mounted, ready
       b.doformat = 0;
+      uint32_t filesize = 0;
       while (!b.doformat && !b.dodismount && !b.die)
       {
          while (!b.doformat && !b.dodismount)
@@ -345,7 +356,7 @@ sd_task (void *arg)
                else
                {
                   ESP_LOGI (TAG, "Recording opened %s", filename);
-                  uint32_t onehour = 3600 * micfreq * micchannels * micbytes;
+                  filesize = sdrectime * micfreq * micchannels * micbytes;
                   struct
                   {
                      char filetypeblocid[4];
@@ -363,7 +374,7 @@ sd_task (void *arg)
                      uint32_t datasize;
                   } riff = {
                      "RIFF",    // Master
-                     36 + onehour,
+                     36 + filesize,
                      "WAVE",
                      "fmt ",    // Chunk
                      16,
@@ -374,13 +385,14 @@ sd_task (void *arg)
                      micchannels * micbytes,
                      micbytes * 8,      // bits
                      "data",    // Data block
-                     onehour,
+                     filesize,
                   };
+                  filesize += 44;
                   fwrite (&riff, sizeof (riff), 1, o);
                   sdfile = o;
                }
             }
-            if (!b.micon && sdfile && sdin == sdout)
+            if (sdfile && sdin == sdout && (!b.micon || ftell (sdfile) >= filesize))
             {                   // End file
                ESP_LOGI (TAG, "Recording closed");
                xSemaphoreTake (sd_mutex, portMAX_DELAY);

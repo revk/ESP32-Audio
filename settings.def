@@ -17,6 +17,7 @@ gpio	sd.mosi		13		// MicroSD MOSI
 gpio	sd.sck		15		// MicroSD SCK
 gpio	sd.cd		-17		// MicroSD CD
 gpio	sd.miso		16		// MicroSD MISO
+u32	sd.rectime	3600	.unit="s"	// Max record time per file
 
 gpio	button		-37		// Button
 gpio	charging	44		// Charging status
