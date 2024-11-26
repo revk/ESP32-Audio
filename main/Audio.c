@@ -150,7 +150,8 @@ revk_web_extra (httpd_req_t * req, int page)
    {
       revk_web_setting (req, NULL, "micgain");
       revk_web_setting (req, NULL, "micstereo");
-      revk_web_setting (req, NULL, "micright");
+      if (!micstereo)
+         revk_web_setting (req, NULL, "micright");
    }
    if (sdss.set)
    {
