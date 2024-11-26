@@ -78,6 +78,7 @@ struct
    uint8_t sip:1;               // In sip mode
    uint8_t micsip:1;            // Mic in SIP mode
    uint8_t spksip:1;            // Spk in SIP mode
+   uint8_t sharedi2s:1;         // I2S shared for Mic and Spk
 } b;
 const char sd_mount[] = "/sd";
 char rgbsd = 0;                 // Colour for SD card
@@ -85,6 +86,9 @@ const char *cardstatus = NULL;  // Status of SD card
 uint64_t sdsize = 0,            // SD card data
    sdfree = 0;
 FILE *volatile sdfile = NULL;
+
+i2s_chan_handle_t mic_handle = { 0 };
+
 #define	MICMS		100
 #define	MICQUEUE	32
 uint8_t micchannels = 0;        // Channels (1 or 2)
@@ -92,6 +96,14 @@ uint8_t micbytes = 0;           // Bytes per channel (2, 3, or 4)
 uint32_t micsamples = 0;        // Samples per collection
 uint32_t micfreq = 0;           // Actual sample rate
 uint8_t *micaudio[MICQUEUE] = { 0 };
+
+#define	SPKMS		100
+i2s_chan_handle_t spk_handle = { 0 };
+
+uint8_t spkchannels = 0;        // Channels (1 or 2)
+uint8_t spkbytes = 0;           // Bytes per channel (2, 3, or 4)
+uint32_t spksamples = 0;        // Samples per collection
+uint32_t spkfreq = 0;           // Actual sample rate
 
 volatile uint8_t sdin = 0,
    sdout = 0;
@@ -456,9 +468,12 @@ mic_task (void *arg)
       return j;
    }
    esp_err_t err;
-   i2s_chan_handle_t rx_handle = { 0 };
+   i2s_chan_handle_t mic_handle = { 0 };
    i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG (I2S_NUM_AUTO, I2S_ROLE_MASTER);
-   err = i2s_new_channel (&chan_cfg, NULL, &rx_handle);
+   if (b.sharedi2s)
+      err = i2s_new_channel (&chan_cfg, &spk_handle, &mic_handle);      // Shared
+   else
+      err = i2s_new_channel (&chan_cfg, NULL, &mic_handle);
    while (!b.die)
    {                            // Loop here as we restart for SIP on/off
       uint8_t rawbytes = (micws.set ? micgain ? 4 : 3 : 2);     // No WS means PDM (16 bit)
@@ -503,11 +518,13 @@ mic_task (void *arg)
                                           },
                          },
          };
+         if (b.sharedi2s)
+            cfg.gpio_cfg.dout = spkdata.num;    // Shared
          cfg.slot_cfg.slot_mask = (micchannels == 2 ? I2S_STD_SLOT_BOTH : micright ? I2S_STD_SLOT_RIGHT : I2S_STD_SLOT_LEFT);
          if (rawbytes == 3)
             cfg.clk_cfg.mclk_multiple = 384;
          if (!err)
-            err = i2s_channel_init_std_mode (rx_handle, &cfg);
+            err = i2s_channel_init_std_mode (mic_handle, &cfg);
       } else
       {                         // PDM 16 bit
          ESP_LOGE (TAG, "Mic init PDM CLK %d DAT %d", micclock.num, micdata.num);
@@ -524,11 +541,11 @@ mic_task (void *arg)
          };
          cfg.slot_cfg.slot_mask = (micchannels == 2 ? I2S_PDM_SLOT_BOTH : micright ? I2S_PDM_SLOT_RIGHT : I2S_PDM_SLOT_LEFT);
          if (!err)
-            err = i2s_channel_init_pdm_rx_mode (rx_handle, &cfg);
+            err = i2s_channel_init_pdm_rx_mode (mic_handle, &cfg);
       }
       gpio_pulldown_en (micdata.num);
       if (!err)
-         err = i2s_channel_enable (rx_handle);
+         err = i2s_channel_enable (mic_handle);
       if (err)
       {
          ESP_LOGE (TAG, "Mic I2S failed");
@@ -542,7 +559,7 @@ mic_task (void *arg)
       while (!b.die && b.sip == b.micsip)
       {
          size_t n = 0;
-         i2s_channel_read (rx_handle, raw ? : micaudio[sdin], micchannels * rawbytes * micsamples, &n, 100);
+         i2s_channel_read (mic_handle, raw ? : micaudio[sdin], micchannels * rawbytes * micsamples, &n, 100);
          if (n < micchannels * rawbytes * micsamples)
             continue;
          if (raw)
@@ -572,7 +589,7 @@ mic_task (void *arg)
          else
             sdin = (sdin + 1) % MICQUEUE;
       }
-      i2s_channel_disable (rx_handle);
+      i2s_channel_disable (mic_handle);
       free (raw);
       for (int i = 0; i < MICQUEUE; i++)
          free (micaudio[i]);
@@ -586,190 +603,219 @@ spk_task (void *arg)
    ESP_LOGE (TAG, "Spk init BCLK %d DAT %d LR %d", spkbclk.num, spkdata.num, spklrc.num);
    revk_gpio_output (spkpwr, 1);
    esp_err_t e = 0;
-   i2s_chan_handle_t tx_handle;
+   i2s_chan_handle_t spk_handle;
    i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG (I2S_NUM_AUTO, I2S_ROLE_MASTER);
-   if (!e)
-      e = i2s_new_channel (&chan_cfg, &tx_handle, NULL);
-
-   i2s_std_config_t std_cfg = {
-      .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG (spkrate),
-      .slot_cfg =
-         I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG (sizeof (audio_t) == 1 ? I2S_DATA_BIT_WIDTH_8BIT : sizeof (audio_t) ==
-                                              2 ? I2S_DATA_BIT_WIDTH_16BIT : I2S_DATA_BIT_WIDTH_32BIT, I2S_SLOT_MODE_MONO),
-      .gpio_cfg = {
-                   .mclk = I2S_GPIO_UNUSED,
-                   .bclk = spkbclk.num,
-                   .ws = spklrc.num,
-                   .dout = spkdata.num,
-                   .din = I2S_GPIO_UNUSED,
-                   .invert_flags = {
-                                    .mclk_inv = false,
-                                    .bclk_inv = spkbclk.invert,
-                                    .ws_inv = spklrc.invert,
-                                    },
-                   },
-   };
-   if (!e)
-      e = i2s_channel_init_std_mode (tx_handle, &std_cfg);
-   if (!e)
-      e = i2s_channel_enable (tx_handle);
-   if (e)
-   {
-      ESP_LOGE (TAG, "Spk I2S failed");
-      jo_t j = jo_object_alloc ();
-      jo_string (j, "error", esp_err_to_name (e));
-      revk_error ("spk", &j);
-      vTaskDelete (NULL);
-      return;
-   }
-#define	SAMPLES	(spkrate/10)
-   if (!morsemessage && *morsestart)
-      morsemessage = strdup (morsestart);
-   audio_t *samples = mallocspi (sizeof (audio_t) * SAMPLES);
-   const char *morsemessagep = NULL;
-   const char *dtmfmessagep = NULL;
-   const char *dd = NULL;
-   uint32_t on = 1,
-      off = 0,
-      freq1 = 0,
-      freq2 = 0,
-      phase1 = 0,
-      phase2 = 0,
-      unit1 = 0,
-      unit2 = 0;
-   audio_t *sin4 = malloc (sizeof (audio_t) * (spkrate / 4 + 1));
-   for (int i = 0; i < spkrate / 4 + 1; i++)
-      sin4[i] = audio_max * sin (M_PI * i / spkrate / 2);
-   int32_t tablesin (int p)
-   {
-      if (p > spkrate / 2)
-         return -tablesin (p - spkrate / 2);
-      if (p > spkrate / 4)
-         return tablesin (spkrate / 2 - p);
-      return sin4[p];
-   }
+   if (b.sharedi2s)
+   {                            // Shared
+      while (spk_handle)
+         sleep (1);             // Wait on mic task
+   } else
+      e = i2s_new_channel (&chan_cfg, &spk_handle, NULL);
    while (!b.die)
    {
-      size_t l = 0;
-      if (!morsemessagep && !dtmfmessagep && morsemessage)
+      b.spksip = b.sip;
+      if (b.sip)
       {
-         morsemessagep = morsemessage;  // New message
-         unit1 = 60 * spkrate / morsewpm / 50;
-         unit2 = (60 * spkrate / morsefwpm - 31 * unit1) / 19;
-         freq1 = morsefreq;
-      }
-      if (!morsemessagep && !dtmfmessagep && dtmfmessage)
-      {
-         dtmfmessagep = dtmfmessage;    // New message
-         unit1 = dtmftone * spkrate / 1000;
-         unit2 = dtmfgap * spkrate / 1000;
-      }
-      if (morsemessagep)
-         for (int i = 0; i < SAMPLES; i++)
-         {
-            if (on)
-            {
-               samples[i] = tablesin (phase1) * morselevel / 100;
-               on--;
-               phase1 += freq1;
-               if (phase1 >= spkrate)
-                  phase1 -= spkrate;
-               continue;
-            }
-            if (off)
-            {
-               samples[i] = 0;
-               off--;
-               continue;
-            }
-            if (!dd)
-            {                   // End of character
-               if (morsemessagep && !*morsemessagep)
-               {                // End of message
-                  morsemessagep = NULL;
-                  free (morsemessage);
-                  morsemessage = NULL;
-                  off = unit1;
-                  continue;
-               }
-               if (!morsemessagep)
-               {
-                  off = unit1;
-                  continue;
-               }
-               char c = toupper ((int) *morsemessagep);
-               for (int i = 0; i < sizeof (morse) / sizeof (*morse); i++)
-                  if (morse[i].c == c)
-                  {
-                     dd = morse[i].m;
-                     break;
-                  }
-               morsemessagep++;
-               if (!dd)
-               {
-                  off = unit2 * 7;
-                  continue;
-               }
-            }
-            if (*dd == '.')
-               on = unit1;
-            else if (*dd == '-')
-               on = unit1 * 3;
-            dd++;
-            if (!*dd)
-            {
-               dd = NULL;
-               off = unit2 * 3; // inter character
-               if (morsemessagep && !*morsemessagep)
-                  off = unit2 * 7;      // inter word
-            } else
-               off = unit1;     // intra character
-      } else if (dtmfmessagep)
-         for (int i = 0; i < SAMPLES; i++)
-         {
-            if (on)
-            {
-               samples[i] = (tablesin (phase1) + tablesin (phase2)) * dtmflevel / 100 / 2;
-               on--;
-               phase1 += freq1;
-               if (phase1 >= spkrate)
-                  phase1 -= spkrate;
-               phase2 += freq2;
-               if (phase2 >= spkrate)
-                  phase2 -= spkrate;
-               continue;
-            }
-            if (off)
-            {
-               samples[i] = 0;
-               off--;
-               continue;
-            }
-            if (!*dtmfmessagep)
-            {
-               dtmfmessagep = NULL;
-               free (dtmfmessage);
-               dtmfmessage = NULL;
-               off = unit2;
-               continue;
-            }
-            off = unit2;
-            static const char dtmf[] = "123A456B789C*0#D";
-            static const uint32_t col[] = { 1209, 1336, 1477, 1633 };
-            static const uint32_t row[] = { 697, 770, 852, 941 };
-            const char *p = strchr (dtmf, *dtmfmessagep);
-            if (p)
-            {
-               freq1 = col[(p - dtmf) % 4];
-               freq2 = row[(p - dtmf) / 4];
-               on = unit1;
-            }
-            dtmfmessagep++;
+         spkfreq = 8000;
+         spkchannels = 1;
+         spkbytes = 2;
+         spksamples = 160;
       } else
-         memset (samples, 0, sizeof (audio_t) * SAMPLES);       // Silence
-      i2s_channel_write (tx_handle, samples, sizeof (audio_t) * SAMPLES, &l, 100);
+      {
+         if (b.sharedi2s)
+            spkfreq = micrate;  // Shared with mic - so not going to work with playing WAV file
+         else
+            spkfreq = spkrate;
+         spkchannels = 1;       // This gets complicated later if not 1
+         spkbytes = 2;          // This gets complicated later if not 2, so needs some though
+         spksamples = spkfreq * SPKMS / 1000;
+      }
+      if (b.sharedi2s)
+         spkfreq = micrate;     // Shared with mic
+      else
+      {
+         spkfreq = spkrate;
+         i2s_std_config_t cfg = {
+            .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG (spkfreq),
+            .slot_cfg =
+               I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG (sizeof (audio_t) == 1 ? I2S_DATA_BIT_WIDTH_8BIT : sizeof (audio_t) ==
+                                                    2 ? I2S_DATA_BIT_WIDTH_16BIT : I2S_DATA_BIT_WIDTH_32BIT, I2S_SLOT_MODE_MONO),
+            .gpio_cfg = {
+                         .mclk = I2S_GPIO_UNUSED,
+                         .bclk = spkbclk.num,
+                         .ws = spklrc.num,
+                         .dout = spkdata.num,
+                         .din = I2S_GPIO_UNUSED,
+                         .invert_flags = {
+                                          .mclk_inv = false,
+                                          .bclk_inv = spkbclk.invert,
+                                          .ws_inv = spklrc.invert,
+                                          },
+                         },
+         };
+         //cfg.slot_cfg.slot_mask = I2S_STD_SLOT_BOTH; // We assume it does this by default
+         if (!e)
+            e = i2s_channel_init_std_mode (spk_handle, &cfg);
+      }
+      if (!e)
+         e = i2s_channel_enable (spk_handle);
+      if (e)
+      {
+         ESP_LOGE (TAG, "Spk I2S failed");
+         jo_t j = jo_object_alloc ();
+         jo_string (j, "error", esp_err_to_name (e));
+         revk_error ("spk", &j);
+         vTaskDelete (NULL);
+         return;
+      }
+      if (!morsemessage && *morsestart)
+         morsemessage = strdup (morsestart);
+      audio_t *samples = mallocspi (spkchannels * spkbytes * spksamples);
+      const char *morsemessagep = NULL;
+      const char *dtmfmessagep = NULL;
+      const char *dd = NULL;
+      uint32_t on = 1,
+         off = 0,
+         freq1 = 0,
+         freq2 = 0,
+         phase1 = 0,
+         phase2 = 0,
+         unit1 = 0,
+         unit2 = 0;
+      audio_t *sin4 = malloc (sizeof (audio_t) * (spkfreq / 4 + 1));
+      for (int i = 0; i < spkfreq / 4 + 1; i++)
+         sin4[i] = audio_max * sin (M_PI * i / spkfreq / 2);
+      int32_t tablesin (int p)
+      {
+         if (p > spkfreq / 2)
+            return -tablesin (p - spkfreq / 2);
+         if (p > spkfreq / 4)
+            return tablesin (spkfreq / 2 - p);
+         return sin4[p];
+      }
+      while (!b.die)
+      {
+         size_t l = 0;
+         if (!morsemessagep && !dtmfmessagep && morsemessage)
+         {
+            morsemessagep = morsemessage;       // New message
+            unit1 = 60 * spkfreq / morsewpm / 50;
+            unit2 = (60 * spkfreq / morsefwpm - 31 * unit1) / 19;
+            freq1 = morsefreq;
+         }
+         if (!morsemessagep && !dtmfmessagep && dtmfmessage)
+         {
+            dtmfmessagep = dtmfmessage; // New message
+            unit1 = dtmftone * spkfreq / 1000;
+            unit2 = dtmfgap * spkfreq / 1000;
+         }
+         if (morsemessagep)
+            for (int i = 0; i < spksamples; i++)
+            {
+               if (on)
+               {
+                  samples[i] = tablesin (phase1) * morselevel / 100;
+                  on--;
+                  phase1 += freq1;
+                  if (phase1 >= spkfreq)
+                     phase1 -= spkfreq;
+                  continue;
+               }
+               if (off)
+               {
+                  samples[i] = 0;
+                  off--;
+                  continue;
+               }
+               if (!dd)
+               {                // End of character
+                  if (morsemessagep && !*morsemessagep)
+                  {             // End of message
+                     morsemessagep = NULL;
+                     free (morsemessage);
+                     morsemessage = NULL;
+                     off = unit1;
+                     continue;
+                  }
+                  if (!morsemessagep)
+                  {
+                     off = unit1;
+                     continue;
+                  }
+                  char c = toupper ((int) *morsemessagep);
+                  for (int i = 0; i < sizeof (morse) / sizeof (*morse); i++)
+                     if (morse[i].c == c)
+                     {
+                        dd = morse[i].m;
+                        break;
+                     }
+                  morsemessagep++;
+                  if (!dd)
+                  {
+                     off = unit2 * 7;
+                     continue;
+                  }
+               }
+               if (*dd == '.')
+                  on = unit1;
+               else if (*dd == '-')
+                  on = unit1 * 3;
+               dd++;
+               if (!*dd)
+               {
+                  dd = NULL;
+                  off = unit2 * 3;      // inter character
+                  if (morsemessagep && !*morsemessagep)
+                     off = unit2 * 7;   // inter word
+               } else
+                  off = unit1;  // intra character
+         } else if (dtmfmessagep)
+            for (int i = 0; i < spksamples; i++)
+            {
+               if (on)
+               {
+                  samples[i] = (tablesin (phase1) + tablesin (phase2)) * dtmflevel / 100 / 2;
+                  on--;
+                  phase1 += freq1;
+                  if (phase1 >= spkfreq)
+                     phase1 -= spkfreq;
+                  phase2 += freq2;
+                  if (phase2 >= spkfreq)
+                     phase2 -= spkfreq;
+                  continue;
+               }
+               if (off)
+               {
+                  samples[i] = 0;
+                  off--;
+                  continue;
+               }
+               if (!*dtmfmessagep)
+               {
+                  dtmfmessagep = NULL;
+                  free (dtmfmessage);
+                  dtmfmessage = NULL;
+                  off = unit2;
+                  continue;
+               }
+               off = unit2;
+               static const char dtmf[] = "123A456B789C*0#D";
+               static const uint32_t col[] = { 1209, 1336, 1477, 1633 };
+               static const uint32_t row[] = { 697, 770, 852, 941 };
+               const char *p = strchr (dtmf, *dtmfmessagep);
+               if (p)
+               {
+                  freq1 = col[(p - dtmf) % 4];
+                  freq2 = row[(p - dtmf) / 4];
+                  on = unit1;
+               }
+               dtmfmessagep++;
+         } else
+            memset (samples, 0, sizeof (audio_t) * spksamples); // Silence
+         i2s_channel_write (spk_handle, samples, spkbytes * spkchannels * spksamples, &l, 100);
+      }
+      i2s_channel_disable (spk_handle);
    }
-   i2s_channel_disable (tx_handle);
    revk_gpio_output (spkpwr, 0);
    rtc_gpio_set_direction_in_sleep (spkpwr.num, RTC_GPIO_MODE_OUTPUT_ONLY);
    rtc_gpio_set_level (spkpwr.num, sdss.invert);
@@ -783,7 +829,8 @@ app_main ()
    xSemaphoreGive (sd_mutex);
    revk_boot (&app_callback);
    revk_start ();
-
+   if (micws.num == spklrc.num && micclock.num == spkbclk.num)
+      b.sharedi2s = 1;
    httpd_config_t config = HTTPD_DEFAULT_CONFIG ();     // When updating the code below, make sure this is enough
    //  Note that we 're also 4 adding revk' s web config handlers
    config.max_uri_handlers = 8;
