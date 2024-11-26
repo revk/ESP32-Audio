@@ -142,7 +142,7 @@ revk_web_extra (httpd_req_t * req, int page)
    }
    if (sdss.set)
    {
-      revk_web_setting (req, NULL, "sdmaxtime");
+      revk_web_setting (req, NULL, "sdrectime");
    }
    if (micws.set || spklrc.set)
    {
