@@ -163,6 +163,10 @@ revk_web_extra (httpd_req_t * req, int page)
       revk_web_setting (req, NULL, "sippass");
       revk_web_setting (req, NULL, "wifilock");
    }
+   if (spklrc.set)
+   {
+      revk_web_setting (req, NULL, "morsestart");
+   }
 }
 
 static void
@@ -823,6 +827,12 @@ spk_task (void *arg)
 }
 
 void
+sipcallback (sip_state_t state, uint8_t len, const uint8_t * data)
+{
+   ESP_LOGE (TAG, "Sip callback %d: %p+%d", state, data, len);
+}
+
+void
 app_main ()
 {
    sd_mutex = xSemaphoreCreateBinary ();
@@ -879,10 +889,13 @@ app_main ()
    if (sdss.set && sdmosi.set && sdmiso.set && sdsck.set)
       revk_task ("sd", sd_task, NULL, 16);
 
+   if (*siphost)
+      sip_register (siphost, sipuser, sippass, sipcallback);
+
    // Buttons and LEDs
    revk_gpio_input (button);
    revk_gpio_input (charging);  // On, off, or flashing
-   uint8_t press = 0;
+   uint8_t press = 255;
    uint8_t charge = 0;
    while (!b.die)
    {
@@ -894,14 +907,19 @@ app_main ()
       }
       if (revk_gpio_get (button))
       {                         // Pressed
-         if (++press == 30 && rtc_gpio_is_valid_gpio (button.num))
+         if (press < 255)
+            press++;
+         if (press == 30 && rtc_gpio_is_valid_gpio (button.num))
             b.die = 1;          // Long press - shutdown (if we can wake up later)
       } else if (press)
       {                         // Released
-         if (!b.micon && !b.sdpresent)
-            ESP_LOGE (TAG, "No card");
-         else
-            b.micon = 1 - b.micon;
+         if (press < 255)
+         {
+            if (!b.micon && !b.sdpresent)
+               ESP_LOGE (TAG, "No card");
+            else
+               b.micon = 1 - b.micon;
+         }
          press = 0;
       }
       if (led_status)
