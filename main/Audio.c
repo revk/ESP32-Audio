@@ -758,6 +758,9 @@ spk_task (void *arg)
       i2s_channel_write (tx_handle, samples, sizeof (audio_t) * SAMPLES, &l, 100);
    }
    i2s_channel_disable (tx_handle);
+   revk_gpio_output (spkpwr, 0);
+   rtc_gpio_set_direction_in_sleep (spkpwr.num, RTC_GPIO_MODE_OUTPUT_ONLY);
+   rtc_gpio_set_level (spkpwr.num, sdss.invert);
    vTaskDelete (NULL);
 }
 
