@@ -79,6 +79,7 @@ struct
    uint8_t micsip:1;            // Mic in SIP mode
    uint8_t spksip:1;            // Spk in SIP mode
    uint8_t sharedi2s:1;         // I2S shared for Mic and Spk
+   uint8_t ha:1;                // Send HA config
 } b;
 const char sd_mount[] = "/sd";
 char rgbsd = 0;                 // Colour for SD card
@@ -140,7 +141,19 @@ app_callback (int client, const char *prefix, const char *target, const char *su
       b.doformat = 1;
       return NULL;
    }
+   if (!strcasecmp (suffix, "connect"))
+   {
+      b.ha = 1;
+      return NULL;
+   }
    return NULL;
+}
+
+void
+send_ha_config (void)
+{
+   b.ha = 0;
+   // TODO
 }
 
 void
@@ -901,6 +914,8 @@ app_main ()
    while (!b.die)
    {
       usleep (100000);
+      if (b.ha)
+         send_ha_config ();
       if (charging.set)
       {
          charge = (charge << 1) | revk_gpio_get (charging);
