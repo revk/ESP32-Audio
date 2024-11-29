@@ -75,11 +75,9 @@ struct
    uint8_t doformat:1;          // SD format
    uint8_t dodismount:1;        // Dismount SD
    uint8_t micon:1;             // Sounds required
-   uint8_t sip:1;               // In sip mode
-   uint8_t micsip:1;            // Mic in SIP mode
-   uint8_t spksip:1;            // Spk in SIP mode
    uint8_t sharedi2s:1;         // I2S shared for Mic and Spk
    uint8_t ha:1;                // Send HA config
+   sip_state_t sip;             // Current SIP strate
 } b;
 const char sd_mount[] = "/sd";
 char rgbsd = 0;                 // Colour for SD card
@@ -485,23 +483,26 @@ mic_task (void *arg)
          jo_int (j, "clock", micclock.num);
       return j;
    }
-   esp_err_t err;
-   i2s_chan_handle_t mic_handle = { 0 };
-   i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG (I2S_NUM_AUTO, I2S_ROLE_MASTER);
-   if (b.sharedi2s)
-      err = i2s_new_channel (&chan_cfg, &spk_handle, &mic_handle);      // Shared
-   else
-      err = i2s_new_channel (&chan_cfg, NULL, &mic_handle);
    while (!b.die)
    {                            // Loop here as we restart for SIP on/off
+      if (b.sip <= SIP_REGISTERED && !b.micon)
+      {                         //i Mic not  needed
+         usleep (100000);
+         continue;
+      }
+      esp_err_t err;
+      i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG (I2S_NUM_AUTO, I2S_ROLE_MASTER);
+      if (b.sharedi2s)
+         err = i2s_new_channel (&chan_cfg, &spk_handle, &mic_handle);   // Shared
+      else
+         err = i2s_new_channel (&chan_cfg, NULL, &mic_handle);
       uint8_t rawbytes = (micws.set ? micgain ? 4 : 3 : 2);     // No WS means PDM (16 bit)
-      b.micsip = b.sip;
-      if (b.sip)
+      if (b.sip > SIP_REGISTERED)
       {
-         micfreq = 8000;
+         micfreq = SIP_RATE;
          micchannels = 1;
          micbytes = 2;
-         micsamples = 160;
+         micsamples = SIP_BYTES;
       } else
       {
          micfreq = micrate;
@@ -574,7 +575,7 @@ mic_task (void *arg)
       }
       ESP_LOGE (TAG, "Mic started, %ld*%d*%d bits at %ldHz - mapped to %d*%d bits", micsamples, micchannels, rawbytes * 8, micfreq,
                 micchannels, micbytes * 8);
-      while (!b.die && b.sip == b.micsip)
+      while (!b.die && !(b.sip <= SIP_REGISTERED && !b.micon))
       {
          size_t n = 0;
          i2s_channel_read (mic_handle, raw ? : micaudio[sdin], micchannels * rawbytes * micsamples, &n, 100);
@@ -611,6 +612,8 @@ mic_task (void *arg)
       free (raw);
       for (int i = 0; i < MICQUEUE; i++)
          free (micaudio[i]);
+      i2s_del_channel (mic_handle);
+      ESP_LOGE (TAG, "Mic stopped");
    }
    vTaskDelete (NULL);
 }
@@ -618,26 +621,59 @@ mic_task (void *arg)
 void
 spk_task (void *arg)
 {
+   enum
+   {
+      SPK_IDLE,
+      SPK_MORSE,
+      SPK_DTMF,
+      SPK_SIP,
+   } mode;
    ESP_LOGE (TAG, "Spk init BCLK %d DAT %d LR %d", spkbclk.num, spkdata.num, spklrc.num);
-   revk_gpio_output (spkpwr, 1);
-   esp_err_t e = 0;
-   i2s_chan_handle_t spk_handle;
-   i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG (I2S_NUM_AUTO, I2S_ROLE_MASTER);
-   if (b.sharedi2s)
-   {                            // Shared
-      while (spk_handle)
-         sleep (1);             // Wait on mic task
-   } else
-      e = i2s_new_channel (&chan_cfg, &spk_handle, NULL);
+   if (!morsemessage && *morsestart)
+      morsemessage = strdup (morsestart);
    while (!b.die)
    {
-      b.spksip = b.sip;
-      if (b.sip)
+      i2s_chan_handle_t *handle = &spk_handle;
+      if (b.sharedi2s)
+         handle = &mic_handle;  // shared
+      uint32_t freq1 = 0,
+         freq2 = 0,
+         unit1 = 0,
+         unit2 = 0;
+      const char *morsemessagep = NULL;
+      const char *dtmfmessagep = NULL;
+      if (b.sip > SIP_REGISTERED)
+         mode = SPK_SIP;
+      else if (morsemessage)
       {
-         spkfreq = 8000;
+         mode = SPK_MORSE;
+         morsemessagep = morsemessage;  // New message
+         unit1 = 60 * spkfreq / morsewpm / 50;
+         unit2 = (60 * spkfreq / morsefwpm - 31 * unit1) / 19;
+         freq1 = morsefreq;
+      } else if (dtmfmessage)
+      {
+         mode = SPK_DTMF;
+         dtmfmessagep = dtmfmessage;    // New message
+         unit1 = dtmftone * spkfreq / 1000;
+         unit2 = dtmfgap * spkfreq / 1000;
+      } else
+         mode = SIP_IDLE;
+      if (mode == SPK_IDLE)
+      {                         // Speaker not needed
+         usleep (100000);
+         continue;
+      }
+      revk_gpio_output (spkpwr, 1);     // Power on
+      esp_err_t e = 0;
+      i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG (I2S_NUM_AUTO, I2S_ROLE_MASTER);
+      e = i2s_new_channel (&chan_cfg, handle, NULL);
+      if (mode == SPK_SIP)
+      {
+         spkfreq = SIP_RATE;
          spkchannels = 1;
          spkbytes = 2;
-         spksamples = 160;
+         spksamples = SIP_BYTES;
       } else
       {
          if (b.sharedi2s)
@@ -671,12 +707,11 @@ spk_task (void *arg)
                                           },
                          },
          };
-         //cfg.slot_cfg.slot_mask = I2S_STD_SLOT_BOTH; // We assume it does this by default
          if (!e)
-            e = i2s_channel_init_std_mode (spk_handle, &cfg);
+            e = i2s_channel_init_std_mode (*handle, &cfg);
       }
       if (!e)
-         e = i2s_channel_enable (spk_handle);
+         e = i2s_channel_enable (*handle);
       if (e)
       {
          ESP_LOGE (TAG, "Spk I2S failed");
@@ -686,20 +721,13 @@ spk_task (void *arg)
          vTaskDelete (NULL);
          return;
       }
-      if (!morsemessage && *morsestart)
-         morsemessage = strdup (morsestart);
+      ESP_LOGE (TAG, "Spk started, %ld*%d*%d bits at %ldHz", spksamples, spkchannels, spkbytes * 8, spkfreq);
       audio_t *samples = mallocspi (spkchannels * spkbytes * spksamples);
-      const char *morsemessagep = NULL;
-      const char *dtmfmessagep = NULL;
       const char *dd = NULL;
       uint32_t on = 1,
          off = 0,
-         freq1 = 0,
-         freq2 = 0,
          phase1 = 0,
-         phase2 = 0,
-         unit1 = 0,
-         unit2 = 0;
+         phase2 = 0;
       audio_t *sin4 = malloc (sizeof (audio_t) * (spkfreq / 4 + 1));
       for (int i = 0; i < spkfreq / 4 + 1; i++)
          sin4[i] = audio_max * sin (M_PI * i / spkfreq / 2);
@@ -711,23 +739,12 @@ spk_task (void *arg)
             return tablesin (spkfreq / 2 - p);
          return sin4[p];
       }
-      while (!b.die)
+      while (!b.die && mode)
       {
          size_t l = 0;
-         if (!morsemessagep && !dtmfmessagep && morsemessage)
+         switch (mode)
          {
-            morsemessagep = morsemessage;       // New message
-            unit1 = 60 * spkfreq / morsewpm / 50;
-            unit2 = (60 * spkfreq / morsefwpm - 31 * unit1) / 19;
-            freq1 = morsefreq;
-         }
-         if (!morsemessagep && !dtmfmessagep && dtmfmessage)
-         {
-            dtmfmessagep = dtmfmessage; // New message
-            unit1 = dtmftone * spkfreq / 1000;
-            unit2 = dtmfgap * spkfreq / 1000;
-         }
-         if (morsemessagep)
+         case SPK_MORSE:
             for (int i = 0; i < spksamples; i++)
             {
                if (on)
@@ -747,17 +764,12 @@ spk_task (void *arg)
                }
                if (!dd)
                {                // End of character
-                  if (morsemessagep && !*morsemessagep)
+                  if (!*morsemessagep)
                   {             // End of message
                      morsemessagep = NULL;
                      free (morsemessage);
                      morsemessage = NULL;
-                     off = unit1;
-                     continue;
-                  }
-                  if (!morsemessagep)
-                  {
-                     off = unit1;
+                     mode = SPK_IDLE;
                      continue;
                   }
                   char c = toupper ((int) *morsemessagep);
@@ -787,7 +799,9 @@ spk_task (void *arg)
                      off = unit2 * 7;   // inter word
                } else
                   off = unit1;  // intra character
-         } else if (dtmfmessagep)
+            }
+            break;
+         case SPK_DTMF:
             for (int i = 0; i < spksamples; i++)
             {
                if (on)
@@ -814,6 +828,7 @@ spk_task (void *arg)
                   free (dtmfmessage);
                   dtmfmessage = NULL;
                   off = unit2;
+                  mode = SPK_IDLE;
                   continue;
                }
                off = unit2;
@@ -828,25 +843,38 @@ spk_task (void *arg)
                   on = unit1;
                }
                dtmfmessagep++;
-         } else
+            }
+            break;
+         case SPK_SIP:
             memset (samples, 0, sizeof (audio_t) * spksamples); // Silence
-         i2s_channel_write (spk_handle, samples, spkbytes * spkchannels * spksamples, &l, 100);
+            break;
+         default:
+         }
+         if(l)i2s_channel_write (*handle, samples, spkbytes * spkchannels * spksamples, &l, 100);
       }
-      i2s_channel_disable (spk_handle);
+      ESP_LOGE (TAG, "Speaker off");
+      revk_gpio_output (spkpwr, 0);
+      if (!b.sharedi2s)
+      {
+         i2s_channel_disable (spk_handle);
+         i2s_del_channel (spk_handle);
+      }
    }
-   revk_gpio_output (spkpwr, 0);
    rtc_gpio_set_direction_in_sleep (spkpwr.num, RTC_GPIO_MODE_OUTPUT_ONLY);
    rtc_gpio_set_level (spkpwr.num, sdss.invert);
    vTaskDelete (NULL);
 }
 
 void
-sipcallback (sip_state_t state, uint8_t len, const uint8_t * data)
+sip_callback (sip_state_t state, uint8_t len, const uint8_t * data)
 {
-   ESP_LOGE (TAG, "Sip callback %d: %p+%d", state, data, len);
-   if (state == SIP_IC_ALERT)
-      sip_answer ();
-   // TODO button answer if we have a button
+   if (b.sip != state)
+   {
+      b.sip = state;
+      ESP_LOGE (TAG, "SIP state %d", state);
+      if (state == SIP_IC_ALERT)
+         sip_answer ();
+   }
 }
 
 void
@@ -907,7 +935,7 @@ app_main ()
       revk_task ("sd", sd_task, NULL, 16);
 
    if (*siphost)
-      sip_register (siphost, sipuser, sippass, sipcallback);
+      sip_register (siphost, sipuser, sippass, sip_callback);
 
    // Buttons and LEDs
    revk_gpio_input (button);
