@@ -844,6 +844,9 @@ void
 sipcallback (sip_state_t state, uint8_t len, const uint8_t * data)
 {
    ESP_LOGE (TAG, "Sip callback %d: %p+%d", state, data, len);
+   if (state == SIP_IC_ALERT)
+      sip_answer ();
+   // TODO button answer if we have a button
 }
 
 void
@@ -926,11 +929,14 @@ app_main ()
          if (press < 255)
             press++;
          if (press == 30 && rtc_gpio_is_valid_gpio (button.num))
-            b.die = 1;          // Long press - shutdown (if we can wake up later)
+            b.die = 1;          // Long press - shutdown (if we can wake up later)S
+         // TODO call hangup if ic alerting
       } else if (press)
       {                         // Released
          if (press < 255)
          {
+            // TODO call answer if ic alerting
+            // TODO call hangup if in call
             if (!b.micon && !b.sdpresent)
                ESP_LOGE (TAG, "No card");
             else
