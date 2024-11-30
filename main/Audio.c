@@ -96,7 +96,8 @@ struct
    uint8_t micon:1;             // Sounds required
    uint8_t sharedi2s:1;         // I2S shared for Mic and Spk
    uint8_t ha:1;                // Send HA config
-} b;
+   uint8_t usb:1;               // USB connected
+} b = { 0 };
 
 const char sd_mount[] = "/sd";
 char rgbsd = 0;                 // Colour for SD card
@@ -188,6 +189,8 @@ revk_web_extra (httpd_req_t * req, int page)
       revk_web_setting (req, NULL, "sdrectime");
       revk_web_setting (req, NULL, "wifilock");
    }
+   if (vbus.set)
+      revk_web_setting (req, NULL, "wifiusb");
    if (micws.set || spklrc.set)
    {
       revk_web_setting (req, NULL, "siphost");
@@ -626,12 +629,25 @@ mic_task (void *arg)
                *o++ = v;
             }
          }
-         if (!b.micon || !sdfile)
-            continue;           // Not needed
-         if ((sdin + 1) % MICQUEUE == sdout)
-            ESP_LOGE (TAG, "Mic overflow");
-         else
-            sdin = (sdin + 1) % MICQUEUE;
+         switch (mic_mode)
+         {
+         case MIC_SIP:
+            {
+               int16_t *i = (void *) micaudio[sdin];
+               uint8_t *o = (void *) micaudio[sdin];
+               for (int s = 0; s < micsamples; s++)
+                  *o++ = sip_pcm13_to_rtp[(*i++) / 8 + 4096];
+               sip_audio (micsamples, (void *) micaudio[sdin]);
+            }
+            break;
+         case MIC_RECORD:
+            if ((sdin + 1) % MICQUEUE == sdout)
+               ESP_LOGE (TAG, "Mic overflow");
+            else
+               sdin = (sdin + 1) % MICQUEUE;
+            break;
+         default:
+         }
       }
       mic_mode = MIC_IDLE;
       i2s_channel_disable (mic_handle);
@@ -652,9 +668,6 @@ spk_task (void *arg)
       morsemessage = strdup (morsestart);
    while (!b.die)
    {
-      i2s_chan_handle_t *handle = &spk_handle;
-      if (b.sharedi2s)
-         handle = &mic_handle;  // shared
       const char *morsep = NULL;
       const char *tonep = NULL;
       spk_mode_t mode = SPK_IDLE;
@@ -670,8 +683,6 @@ spk_task (void *arg)
       }
       revk_gpio_output (spkpwr, 1);     // Power on
       esp_err_t e = 0;
-      i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG (I2S_NUM_AUTO, I2S_ROLE_MASTER);
-      e = i2s_new_channel (&chan_cfg, handle, NULL);
       if (mode == SPK_WAV)
       {
          // TODO rate depends on WAV format
@@ -689,8 +700,12 @@ spk_task (void *arg)
          spkbytes = 2;
          spksamples = SIP_BYTES;
       }
-      if (!b.sharedi2s)
+      if (b.sharedi2s)
+         spk_handle = mic_handle;
+      else
       {
+         i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG (I2S_NUM_AUTO, I2S_ROLE_MASTER);
+         e = i2s_new_channel (&chan_cfg, &spk_handle, NULL);
          i2s_std_config_t cfg = {
             .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG (spkfreq),
             .slot_cfg =
@@ -710,10 +725,10 @@ spk_task (void *arg)
                          },
          };
          if (!e)
-            e = i2s_channel_init_std_mode (*handle, &cfg);
+            e = i2s_channel_init_std_mode (spk_handle, &cfg);
       }
       if (!e)
-         e = i2s_channel_enable (*handle);
+         e = i2s_channel_enable (spk_handle);
       if (e)
       {
          ESP_LOGE (TAG, "Spk I2S failed");
@@ -785,7 +800,6 @@ spk_task (void *arg)
                   off--;
                   continue;
                }
-               ESP_LOGE (TAG, "Tone %s Morse %s", tonep ? : "null", morsep ? : "null");
                if (!tonep || !*tonep)
                {
                   tonep = NULL;
@@ -822,7 +836,7 @@ spk_task (void *arg)
                         off = morsef * 7 - morseu;      // Word gap (we did morseu already)
                      else
                      {
-                        off = dtmfg;
+                        off = spkfreq;  // Long gap
                         mode = SPK_IDLE;
                      }
                   }
@@ -859,6 +873,8 @@ spk_task (void *arg)
                }
                tonep++;
             }
+            size_t l = 0;
+            i2s_channel_write (spk_handle, samples, spkbytes * spkchannels * spksamples, &l, 100);
             break;
          case SPK_SIP:
             if (sip_mode <= SIP_REGISTERED)
@@ -867,8 +883,6 @@ spk_task (void *arg)
             break;
          default:
          }
-         size_t l = 0;
-         i2s_channel_write (*handle, samples, spkbytes * spkchannels * spksamples, &l, 100);
       }
       spk_mode = SPK_IDLE;
       ESP_LOGE (TAG, "Spk stopped");
@@ -898,6 +912,14 @@ sip_callback (sip_state_t state, uint8_t len, const uint8_t * data)
          else if (!button.set || !spklrc.set)
             sip_answer ();
       }
+   }
+   if (data && len == SIP_BYTES && spk_mode == SPK_SIP)
+   {
+      int16_t samples[SIP_BYTES];
+      for (int i = 0; i < SIP_BYTES; i++)
+         samples[i] = sip_rtp_to_pcm13[data[i]] * 8;
+      size_t l = 0;
+      i2s_channel_write (spk_handle, samples, SIP_BYTES * 2, &l, 100);
    }
 }
 
@@ -964,13 +986,30 @@ app_main ()
    // Buttons and LEDs
    revk_gpio_input (button);
    revk_gpio_input (charging);  // On, off, or flashing
+   revk_gpio_input (vbus);      // USB status
    uint8_t press = 255;
    uint8_t charge = 0;
+   uint8_t usb = 1;
    while (!b.die)
    {
       usleep (100000);
       if (b.ha)
          send_ha_config ();
+      if (vbus.set)
+      {
+         usb = revk_gpio_get (vbus);
+         if (usb != b.usb)
+         {
+            b.usb = usb;
+            if (wifiusb)
+            {
+               if (usb)
+                  revk_enable_wifi ();
+               else
+                  revk_disable_wifi ();
+            }
+         }
+      }
       if (charging.set)
       {
          charge = (charge << 1) | revk_gpio_get (charging);

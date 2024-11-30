@@ -20,6 +20,7 @@ u32	sd.rectime	3600	.unit="s"	// Max record time per file
 
 gpio	button		-37		// Button
 gpio	charging	44		// Charging status
+gpio	vbus				// USB power status
 
 gpio	rgb.status	35		// Status LED
 gpio	rgb.record	3		// Recording LED
@@ -38,4 +39,5 @@ s	sip.host		.hide=1	// SIP server hostname
 s	sip.user		.hide=1	// SIP registration username
 s	sip.pass		.hide=1	// SIP registration password
 
-bit	wifilock	1	.hide=1	// Lock down settings/AP mode when SD card inserted
+bit	wifi.lock	1	.hide=1	// Lock down settings/AP mode when SD card inserted
+bit	wifi.usb		.hide=1	// Only have wifi when on USB power
