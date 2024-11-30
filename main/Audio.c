@@ -751,7 +751,8 @@ spk_task (void *arg)
          morsef = 0,
          dtmfu = 0,             // Timings for DTMF
          dtmfg = 0;
-      uint32_t tonelevel = 0;
+      uint32_t level1 = 0,
+         level2 = 0;
       int32_t tablesin (uint32_t p)
       {                         // 8kHz SIN
          if (p > SIP_RATE / 2)
@@ -759,6 +760,13 @@ spk_task (void *arg)
          if (p > SIP_RATE / 4)
             return tablesin (SIP_RATE / 2 - p);
          return sip_sin4_8k[p];
+      }
+      if (mode == SPK_SIP)
+      {
+         level1 = 50;           // Ring tone
+         freq1 = 400;
+         level2 = 50;
+         freq2 = 450;
       }
       if (mode == SPK_TONE)
       {
@@ -776,110 +784,127 @@ spk_task (void *arg)
          switch (mode)
          {
          case SPK_TONE:
-            for (int i = 0; i < spksamples; i++)
             {
-               samples[i] = 0;
-               if (on)
+               for (int i = 0; i < spksamples; i++)
                {
-                  if (freq2)
+                  samples[i] = 0;
+                  if (on)
                   {
-                     samples[i] = (tablesin (phase1) + tablesin (phase2)) * (int) tonelevel / 100 / 4;
-                     phase2 += freq2;
-                     if (phase2 >= SIP_RATE)
-                        phase2 -= SIP_RATE;
-                  } else
-                     samples[i] = tablesin (phase1) * (int) tonelevel / 100 / 2;
-                  phase1 += freq1;
-                  if (phase1 >= SIP_RATE)
-                     phase1 -= SIP_RATE;
-                  on--;
-                  continue;
-               }
-               if (off)
-               {
-                  off--;
-                  continue;
-               }
-               if (!tonep || !*tonep)
-               {
-                  tonep = NULL;
-                  free (tones);
-                  tones = NULL;
-                  if (morsep)
-                  {             // More morse
-                     if (!*morsep)
-                     {          // End of morse
-                        morsep = NULL;
-                        free (morsemessage);
-                        morsemessage = NULL;
-                        off = morsef * 7;       // Word gap
-                        continue;
-                     }
-                     char c = toupper ((int) *morsep++);
-                     for (int i = 0; i < sizeof (morse) / sizeof (*morse); i++)
-                        if (morse[i].c == c)
-                        {
-                           tonep = tones = strdup (morse[i].m);
-                           break;
-                        }
-                     if (!tones)
+                     if (freq2)
                      {
-                        off = morsef * 7;       // Word gap
-                        continue;
-                     }
-                     off = morsef * 3;  // inter character
+                        samples[i] = (tablesin (phase1) * (int) level1 + tablesin (phase2) * (int) level2) / 100 / 4;
+                        phase2 += freq2;
+                        if (phase2 >= SIP_RATE)
+                           phase2 -= SIP_RATE;
+                     } else
+                        samples[i] = tablesin (phase1) * (int) level1 / 100 / 2;
+                     phase1 += freq1;
+                     if (phase1 >= SIP_RATE)
+                        phase1 -= SIP_RATE;
+                     on--;
                      continue;
                   }
-                  if (!tones)
-                  {             // End
+                  if (off)
+                  {
+                     off--;
+                     continue;
+                  }
+                  if (!tonep || !*tonep)
+                  {
+                     tonep = NULL;
+                     free (tones);
+                     tones = NULL;
                      if (morsep)
-                        off = morsef * 7 - morseu;      // Word gap (we did morseu already)
-                     else
+                     {          // More morse
+                        if (!*morsep)
+                        {       // End of morse
+                           morsep = NULL;
+                           free (morsemessage);
+                           morsemessage = NULL;
+                           off = morsef * 7;    // Word gap
+                           continue;
+                        }
+                        char c = toupper ((int) *morsep++);
+                        for (int i = 0; i < sizeof (morse) / sizeof (*morse); i++)
+                           if (morse[i].c == c)
+                           {
+                              tonep = tones = strdup (morse[i].m);
+                              break;
+                           }
+                        if (!tones)
+                        {
+                           off = morsef * 7;    // Word gap
+                           continue;
+                        }
+                        off = morsef * 3;       // inter character
+                        continue;
+                     }
+                     if (!tones)
+                     {          // End
+                        if (morsep)
+                           off = morsef * 7 - morseu;   // Word gap (we did morseu already)
+                        else
+                        {
+                           off = spkfreq;       // Long gap
+                           mode = SPK_IDLE;
+                        }
+                     }
+                     continue;
+                  }
+                  if (*tonep == '.')
+                  {             // Morse dot
+                     level1 = morselevel;
+                     on = morseu;
+                     off = morseu;
+                     freq1 = morsefreq;
+                     freq2 = 0;
+                  } else if (*tonep == '-')
+                  {             // Morse dash
+                     level1 = morselevel;
+                     on = morseu * 3;
+                     off = morseu;
+                     freq1 = morsefreq;
+                     freq2 = 0;
+                  } else
+                  {             // DTMF
+                     level2 = level1 = dtmflevel;
+                     off = dtmfg;
+                     static const char dtmf[] = "123A456B789C*0#D";
+                     static const uint32_t col[] = { 1209, 1336, 1477, 1633 };
+                     static const uint32_t row[] = { 697, 770, 852, 941 };
+                     const char *p = strchr (dtmf, *tonep);
+                     if (p)
                      {
-                        off = spkfreq;  // Long gap
-                        mode = SPK_IDLE;
+                        freq1 = col[(p - dtmf) % 4];
+                        freq2 = row[(p - dtmf) / 4];
+                        on = dtmfu;
                      }
                   }
-                  continue;
+                  tonep++;
                }
-               if (*tonep == '.')
-               {                // Morse dot
-                  tonelevel = morselevel;
-                  on = morseu;
-                  off = morseu;
-                  freq1 = morsefreq;
-                  freq2 = 0;
-               } else if (*tonep == '-')
-               {                // Morse dash
-                  tonelevel = morselevel;
-                  on = morseu * 3;
-                  off = morseu;
-                  freq1 = morsefreq;
-                  freq2 = 0;
-               } else
-               {                // DTMF
-                  tonelevel = dtmflevel;
-                  off = dtmfg;
-                  static const char dtmf[] = "123A456B789C*0#D";
-                  static const uint32_t col[] = { 1209, 1336, 1477, 1633 };
-                  static const uint32_t row[] = { 697, 770, 852, 941 };
-                  const char *p = strchr (dtmf, *tonep);
-                  if (p)
-                  {
-                     freq1 = col[(p - dtmf) % 4];
-                     freq2 = row[(p - dtmf) / 4];
-                     on = dtmfu;
-                  }
-               }
-               tonep++;
+               size_t l = 0;
+               i2s_channel_write (spk_handle, samples, spkbytes * spkchannels * spksamples, &l, 100);
             }
-            size_t l = 0;
-            i2s_channel_write (spk_handle, samples, spkbytes * spkchannels * spksamples, &l, 100);
             break;
          case SPK_SIP:
             if (sip_mode <= SIP_REGISTERED)
                mode = SIP_IDLE;
-            memset (samples, 0, sizeof (audio_t) * spksamples); // Silence
+            else if (sip_mode == SIP_IC_ALERT)
+            {
+               // TODO this is continuous, needs cycling as normal ringing tone
+               for (int i = 0; i < spksamples; i++)
+               {
+                  samples[i] = (tablesin (phase1) * (int) level1 + tablesin (phase2) * (int) level2) / 100 / 4;
+                  phase1 += freq1;
+                  if (phase1 >= SIP_RATE)
+                     phase1 -= SIP_RATE;
+                  phase2 += freq2;
+                  if (phase2 >= SIP_RATE)
+                     phase2 -= SIP_RATE;
+               }
+               size_t l = 0;
+               i2s_channel_write (spk_handle, samples, spkbytes * spkchannels * spksamples, &l, 100);
+            }
             break;
          default:
          }
@@ -913,7 +938,7 @@ sip_callback (sip_state_t state, uint8_t len, const uint8_t * data)
             sip_answer ();
       }
    }
-   if (data && len == SIP_BYTES && spk_mode == SPK_SIP)
+   if (data && len == SIP_BYTES && spk_mode == SPK_SIP && (state == SIP_IC || state == SIP_OG || state == SIP_OG_ALERT))
    {
       int16_t samples[SIP_BYTES];
       for (int i = 0; i < SIP_BYTES; i++)
