@@ -1068,7 +1068,7 @@ app_main ()
          }
       } else if (press)
       {                         // Released
-         if (press < 255)
+         if (press < 30)
          {
             if (sip_mode == SIP_IC_ALERT)
                sip_answer ();
