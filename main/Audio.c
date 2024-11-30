@@ -632,6 +632,7 @@ mic_task (void *arg)
          switch (mic_mode)
          {
          case MIC_SIP:
+            if (sip_mode == SIP_IC || sip_mode == SIP_OG)
             {
                int16_t *i = (void *) micaudio[sdin];
                uint8_t *o = (void *) micaudio[sdin];
@@ -763,10 +764,10 @@ spk_task (void *arg)
       }
       if (mode == SPK_SIP)
       {
-         level1 = 50;           // Ring tone
-         freq1 = 400;
-         level2 = 50;
-         freq2 = 450;
+         level1 = 50;           // Ring beeps
+         freq1 = 1000;
+         on = SIP_RATE / 3;
+         off = SIP_RATE / 10;
       }
       if (mode == SPK_TONE)
       {
@@ -790,6 +791,7 @@ spk_task (void *arg)
                   samples[i] = 0;
                   if (on)
                   {
+                     on--;
                      if (freq2)
                      {
                         samples[i] = (tablesin (phase1) * (int) level1 + tablesin (phase2) * (int) level2) / 100 / 4;
@@ -801,7 +803,6 @@ spk_task (void *arg)
                      phase1 += freq1;
                      if (phase1 >= SIP_RATE)
                         phase1 -= SIP_RATE;
-                     on--;
                      continue;
                   }
                   if (off)
@@ -833,22 +834,19 @@ spk_task (void *arg)
                            }
                         if (!tones)
                         {
-                           off = morsef * 7;    // Word gap
+                           off = morsef * 7 - morseu;   // Word gap
                            continue;
                         }
-                        off = morsef * 3;       // inter character
+                        off = morsef * 3 - morseu;      // inter character
                         continue;
                      }
-                     if (!tones)
-                     {          // End
-                        if (morsep)
-                           off = morsef * 7 - morseu;   // Word gap (we did morseu already)
-                        else
-                        {
-                           off = spkfreq;       // Long gap
-                           mode = SPK_IDLE;
-                        }
-                     }
+                  }
+                  if (!tones)
+                  {             // End
+                     if (morsep)
+                        off = morsef * 7 - morseu;      // Word gap (we did morseu already)
+                     else
+                        mode = SPK_IDLE;
                      continue;
                   }
                   if (*tonep == '.')
@@ -894,13 +892,25 @@ spk_task (void *arg)
                // TODO this is continuous, needs cycling as normal ringing tone
                for (int i = 0; i < spksamples; i++)
                {
-                  samples[i] = (tablesin (phase1) * (int) level1 + tablesin (phase2) * (int) level2) / 100 / 4;
-                  phase1 += freq1;
-                  if (phase1 >= SIP_RATE)
-                     phase1 -= SIP_RATE;
-                  phase2 += freq2;
-                  if (phase2 >= SIP_RATE)
-                     phase2 -= SIP_RATE;
+                  if (on)
+                  {
+                     on--;
+                     samples[i] = tablesin (phase1) * (int) level1 / 100 / 2;
+                     phase1 += freq1;
+                     if (phase1 >= SIP_RATE)
+                        phase1 -= SIP_RATE;
+                     continue;
+                  }
+                  if (off)
+                  {
+                     off--;
+                     samples[i] = 0;
+                     if (!off)
+                     {
+                        freq1 = 3000 - freq1;
+                        on = off = SIP_RATE / 10;
+                     }
+                  }
                }
                size_t l = 0;
                i2s_channel_write (spk_handle, samples, spkbytes * spkchannels * spksamples, &l, 100);
@@ -932,10 +942,15 @@ sip_callback (sip_state_t state, uint8_t len, const uint8_t * data)
       ESP_LOGE (TAG, "SIP state %d", state);
       if (state == SIP_IC_ALERT)
       {
-         if (spk_mode || mic_mode)
+         if ((spk_mode && spk_mode != SPK_SIP) || (mic_mode && mic_mode != MIC_SIP))
+         {
+            ESP_LOGE (TAG, "Busy %d/%d", spk_mode, mic_mode);
             sip_hangup ();
-         else if (!button.set || !spklrc.set)
+         } else if (!button.set || !spklrc.set)
+         {
+            ESP_LOGE (TAG, "Answer");
             sip_answer ();
+         }
       }
    }
    if (data && len == SIP_BYTES && spk_mode == SPK_SIP && (state == SIP_IC || state == SIP_OG || state == SIP_OG_ALERT))
@@ -1044,9 +1059,13 @@ app_main ()
       {                         // Pressed
          if (press < 255)
             press++;
-         if (press == 30 && rtc_gpio_is_valid_gpio (button.num))
-            b.die = 1;          // Long press - shutdown (if we can wake up later)S
-         // TODO call hangup if ic alerting
+         if (press == 30)
+         {                      // Long press
+            if (sip_mode == SIP_IC_ALERT)
+               sip_hangup ();
+            else if (rtc_gpio_is_valid_gpio (button.num))
+               b.die = 1;
+         }
       } else if (press)
       {                         // Released
          if (press < 255)
