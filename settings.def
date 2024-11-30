@@ -2,7 +2,6 @@ gpio	spk.pwr				// Speaker power on
 gpio	spk.lrc				// Speaker LR clock
 gpio	spk.bclk			// Speaker Bit clock
 gpio	spk.data			// Speaker Data
-u32	spk.rate	8000 .unit="Hz"	// Speaker Output rate (8k 16k 32k 44.1k 48k 88.2k 96k only)
 
 gpio	mic.data	1		// Microphone Data / SD
 gpio	mic.clock	11		// Microphone Clock / SCK

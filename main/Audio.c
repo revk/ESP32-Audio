@@ -66,7 +66,26 @@ struct
 };
 
 char *morsemessage = NULL;      // Malloc'd
-char *dtmfmessage = NULL;       // Malloc'd
+char *tones = NULL;             // Malloc'd
+
+typedef enum
+{
+   MIC_IDLE,
+   MIC_SIP,
+   MIC_RECORD,
+} mic_mode_t;
+mic_mode_t mic_mode = 0;
+
+typedef enum
+{
+   SPK_IDLE,
+   SPK_SIP,
+   SPK_TONE,
+   SPK_WAV,
+} spk_mode_t;
+spk_mode_t spk_mode = 0;
+
+sip_state_t sip_mode;
 
 struct
 {
@@ -77,8 +96,8 @@ struct
    uint8_t micon:1;             // Sounds required
    uint8_t sharedi2s:1;         // I2S shared for Mic and Spk
    uint8_t ha:1;                // Send HA config
-   sip_state_t sip;             // Current SIP strate
 } b;
+
 const char sd_mount[] = "/sd";
 char rgbsd = 0;                 // Colour for SD card
 const char *cardstatus = NULL;  // Status of SD card
@@ -124,14 +143,14 @@ app_callback (int client, const char *prefix, const char *target, const char *su
       morsemessage = jo_strdup (j);
       return NULL;
    }
-   if (!strcasecmp (suffix, "dtmf"))
+   if (!strcasecmp (suffix, "dtmf") || !strcasecmp (suffix, "tone"))
    {
-      if (dtmfmessage)
+      if (tones)
          return "Wait";
       if (jo_here (j) != JO_STRING)
          return "JSON string";
       // TODO allow object with custom timings, and so on
-      dtmfmessage = jo_strdup (j);
+      tones = jo_strdup (j);
       return NULL;
    }
    if (!strcasecmp (suffix, "format"))
@@ -347,7 +366,7 @@ sd_task (void *arg)
                b.dodismount = 1;
                break;
             }
-            if (b.micon && !sdfile)
+            if (mic_mode == MIC_RECORD && !sdfile)
             {                   // Start file
                char filename[100];
                int fileno = 0;
@@ -420,7 +439,7 @@ sd_task (void *arg)
                   sdfile = o;
                }
             }
-            if (sdfile && sdin == sdout && (!b.micon || ftell (sdfile) >= filesize))
+            if (sdfile && sdin == sdout && (mic_mode != MIC_RECORD || ftell (sdfile) >= filesize))
             {                   // End file
                ESP_LOGI (TAG, "Recording closed");
                xSemaphoreTake (sd_mutex, portMAX_DELAY);
@@ -485,8 +504,13 @@ mic_task (void *arg)
    }
    while (!b.die)
    {                            // Loop here as we restart for SIP on/off
-      if (b.sip <= SIP_REGISTERED && !b.micon)
-      {                         //i Mic not  needed
+      mic_mode_t mode = MIC_IDLE;
+      if (sip_mode > SIP_REGISTERED)
+         mode = MIC_SIP;
+      else if (b.micon)
+         mode = MIC_RECORD;
+      if (!mode)
+      {
          usleep (100000);
          continue;
       }
@@ -497,7 +521,7 @@ mic_task (void *arg)
       else
          err = i2s_new_channel (&chan_cfg, NULL, &mic_handle);
       uint8_t rawbytes = (micws.set ? micgain ? 4 : 3 : 2);     // No WS means PDM (16 bit)
-      if (b.sip > SIP_REGISTERED)
+      if (sip_mode > SIP_REGISTERED)
       {
          micfreq = SIP_RATE;
          micchannels = 1;
@@ -573,9 +597,10 @@ mic_task (void *arg)
          vTaskDelete (NULL);
          return;
       }
-      ESP_LOGE (TAG, "Mic started, %ld*%d*%d bits at %ldHz - mapped to %d*%d bits", micsamples, micchannels, rawbytes * 8, micfreq,
-                micchannels, micbytes * 8);
-      while (!b.die && !(b.sip <= SIP_REGISTERED && !b.micon))
+      mic_mode = mode;
+      ESP_LOGE (TAG, "Mic started mode %d, %ld*%d*%d bits at %ldHz - mapped to %d*%d bits", mode, micsamples, micchannels,
+                rawbytes * 8, micfreq, micchannels, micbytes * 8);
+      while (!b.die && !(sip_mode <= SIP_REGISTERED && !b.micon))
       {
          size_t n = 0;
          i2s_channel_read (mic_handle, raw ? : micaudio[sdin], micchannels * rawbytes * micsamples, &n, 100);
@@ -608,6 +633,7 @@ mic_task (void *arg)
          else
             sdin = (sdin + 1) % MICQUEUE;
       }
+      mic_mode = MIC_IDLE;
       i2s_channel_disable (mic_handle);
       free (raw);
       for (int i = 0; i < MICQUEUE; i++)
@@ -621,13 +647,6 @@ mic_task (void *arg)
 void
 spk_task (void *arg)
 {
-   enum
-   {
-      SPK_IDLE,
-      SPK_MORSE,
-      SPK_DTMF,
-      SPK_SIP,
-   } mode = 0;
    ESP_LOGE (TAG, "Spk init BCLK %d DAT %d LR %d", spkbclk.num, spkdata.num, spklrc.num);
    if (!morsemessage && *morsestart)
       morsemessage = strdup (morsestart);
@@ -636,51 +655,42 @@ spk_task (void *arg)
       i2s_chan_handle_t *handle = &spk_handle;
       if (b.sharedi2s)
          handle = &mic_handle;  // shared
-      uint32_t freq1 = 0,
-         freq2 = 0,
-         unit1 = 0,
-         unit2 = 0;
-      const char *morsemessagep = NULL;
-      const char *dtmfmessagep = NULL;
-      if (b.sip > SIP_REGISTERED)
+      const char *morsep = NULL;
+      const char *tonep = NULL;
+      spk_mode_t mode = SPK_IDLE;
+      if (sip_mode > SIP_REGISTERED)
          mode = SPK_SIP;
-      else if (morsemessage)
-         mode = SPK_MORSE;
-      else if (dtmfmessage)
-         mode = SPK_DTMF;
-      else
-         mode = SIP_IDLE;
-      if (mode == SPK_IDLE)
+      else if (morsemessage || tones)
+         mode = SPK_TONE;
+      // TODO WAV mode
+      if (!mode)
       {                         // Speaker not needed
          usleep (100000);
          continue;
       }
-      ESP_LOGE (TAG, "mode=%u unit1=%lu unit2=%lu", mode, unit1, unit2);
       revk_gpio_output (spkpwr, 1);     // Power on
       esp_err_t e = 0;
       i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG (I2S_NUM_AUTO, I2S_ROLE_MASTER);
       e = i2s_new_channel (&chan_cfg, handle, NULL);
-      if (mode == SPK_SIP)
+      if (mode == SPK_WAV)
+      {
+         // TODO rate depends on WAV format
+         if (b.sharedi2s)
+            spkfreq = micrate;  // Shared with mic - so not going to work with playing WAV file
+         else
+            spkfreq = 8000;     // TODO
+         spkchannels = 1;       // This gets complicated later if not 1
+         spkbytes = 2;          // This gets complicated later if not 2, so needs some though
+         spksamples = spkfreq * SPKMS / 1000;
+      } else
       {
          spkfreq = SIP_RATE;
          spkchannels = 1;
          spkbytes = 2;
          spksamples = SIP_BYTES;
-      } else
-      {
-         if (b.sharedi2s)
-            spkfreq = micrate;  // Shared with mic - so not going to work with playing WAV file
-         else
-            spkfreq = spkrate;
-         spkchannels = 1;       // This gets complicated later if not 1
-         spkbytes = 2;          // This gets complicated later if not 2, so needs some though
-         spksamples = spkfreq * SPKMS / 1000;
       }
-      if (b.sharedi2s)
-         spkfreq = micrate;     // Shared with mic
-      else
+      if (!b.sharedi2s)
       {
-         spkfreq = spkrate;
          i2s_std_config_t cfg = {
             .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG (spkfreq),
             .slot_cfg =
@@ -713,111 +723,61 @@ spk_task (void *arg)
          vTaskDelete (NULL);
          return;
       }
+      spk_mode = mode;
       ESP_LOGE (TAG, "Spk started mode %d, %ld*%d*%d bits at %ldHz", mode, spksamples, spkchannels, spkbytes * 8, spkfreq);
       audio_t *samples = mallocspi (spkchannels * spkbytes * spksamples);
-      const char *dd = NULL;
       uint32_t on = 1,
          off = 0,
          phase1 = 0,
-         phase2 = 0;
-      audio_t *sin4 = malloc (sizeof (audio_t) * (spkfreq / 4 + 1));
-      for (int i = 0; i < spkfreq / 4 + 1; i++)
-         sin4[i] = audio_max * sin (M_PI * i / spkfreq / 2);
-      int32_t tablesin (int p)
-      {
-         if (p > spkfreq / 2)
-            return -tablesin (p - spkfreq / 2);
-         if (p > spkfreq / 4)
-            return tablesin (spkfreq / 2 - p);
-         return sin4[p];
+         phase2 = 0,
+         freq1 = 0,
+         freq2 = 0,
+         morseu = 0,            // Timings for morse
+         morsef = 0,
+         dtmfu = 0,             // Timings for DTMF
+         dtmfg = 0;
+      uint32_t tonelevel = 0;
+      int32_t tablesin (uint32_t p)
+      {                         // 8kHz SIN
+         if (p > SIP_RATE / 2)
+            return -tablesin (p - SIP_RATE / 2);
+         if (p > SIP_RATE / 4)
+            return tablesin (SIP_RATE / 2 - p);
+         return sip_sin4_8k[p];
       }
-      if (mode == SPK_MORSE)
+      if (mode == SPK_TONE)
       {
-         morsemessagep = morsemessage;  // New message
-         unit1 = 60 * spkfreq / morsewpm / 50;
-         unit2 = (60 * spkfreq / morsefwpm - 31 * unit1) / 19;
-         freq1 = morsefreq;
-      } else if (mode == SPK_DTMF)
-      {
-         dtmfmessagep = dtmfmessage;    // New message
-         unit1 = dtmftone * spkfreq / 1000;
-         unit2 = dtmfgap * spkfreq / 1000;
+         if (morsemessage)
+            morsep = morsemessage;      // New message
+         else if (tones)
+            tonep = tones;      // New tones
+         morseu = 60 * spkfreq / morsewpm / 50;
+         morsef = (60 * spkfreq / morsefwpm - 31 * morseu) / 19;
+         dtmfu = dtmftone * spkfreq / 1000;
+         dtmfg = dtmfgap * spkfreq / 1000;
       }
       while (!b.die && mode)
       {
          switch (mode)
          {
-         case SPK_MORSE:
+         case SPK_TONE:
             for (int i = 0; i < spksamples; i++)
             {
                samples[i] = 0;
                if (on)
                {
-                  samples[i] = tablesin (phase1) * morselevel / 100;
-                  on--;
-                  phase1 += freq1;
-                  if (phase1 >= spkfreq)
-                     phase1 -= spkfreq;
-                  continue;
-               }
-               if (off)
-               {
-                  off--;
-                  continue;
-               }
-               if (!dd)
-               {                // End of character
-                  if (!morsemessagep || !*morsemessagep)
-                  {             // End of message
-                     morsemessagep = NULL;
-                     free (morsemessage);
-                     morsemessage = NULL;
-                     mode = SPK_IDLE;
-                     continue;
-                  }
-                  char c = toupper ((int) *morsemessagep);
-                  for (int i = 0; i < sizeof (morse) / sizeof (*morse); i++)
-                     if (morse[i].c == c)
-                     {
-                        dd = morse[i].m;
-                        break;
-                     }
-                  morsemessagep++;
-                  if (!dd)
+                  if (freq2)
                   {
-                     off = unit2 * 7;
-                     continue;
-                  }
-               }
-               if (*dd == '.')
-                  on = unit1;
-               else if (*dd == '-')
-                  on = unit1 * 3;
-               dd++;
-               if (!*dd)
-               {
-                  dd = NULL;
-                  off = unit2 * 3;      // inter character
-                  if (morsemessagep && !*morsemessagep)
-                     off = unit2 * 7;   // inter word
-               } else
-                  off = unit1;  // intra character
-            }
-            break;
-         case SPK_DTMF:
-            for (int i = 0; i < spksamples; i++)
-            {
-               samples[i] = 0;
-               if (on)
-               {
-                  samples[i] = (tablesin (phase1) + tablesin (phase2)) * dtmflevel / 100 / 2;
-                  on--;
+                     samples[i] = (tablesin (phase1) + tablesin (phase2)) * (int) tonelevel / 100 / 4;
+                     phase2 += freq2;
+                     if (phase2 >= SIP_RATE)
+                        phase2 -= SIP_RATE;
+                  } else
+                     samples[i] = tablesin (phase1) * (int) tonelevel / 100 / 2;
                   phase1 += freq1;
-                  if (phase1 >= spkfreq)
-                     phase1 -= spkfreq;
-                  phase2 += freq2;
-                  if (phase2 >= spkfreq)
-                     phase2 -= spkfreq;
+                  if (phase1 >= SIP_RATE)
+                     phase1 -= SIP_RATE;
+                  on--;
                   continue;
                }
                if (off)
@@ -825,31 +785,83 @@ spk_task (void *arg)
                   off--;
                   continue;
                }
-               if (!dtmfmessagep || !*dtmfmessagep)
+               ESP_LOGE (TAG, "Tone %s Morse %s", tonep ? : "null", morsep ? : "null");
+               if (!tonep || !*tonep)
                {
-                  dtmfmessagep = NULL;
-                  free (dtmfmessage);
-                  dtmfmessage = NULL;
-                  off = unit2;
-                  mode = SPK_IDLE;
+                  tonep = NULL;
+                  free (tones);
+                  tones = NULL;
+                  if (morsep)
+                  {             // More morse
+                     if (!*morsep)
+                     {          // End of morse
+                        morsep = NULL;
+                        free (morsemessage);
+                        morsemessage = NULL;
+                        off = morsef * 7;       // Word gap
+                        continue;
+                     }
+                     char c = toupper ((int) *morsep++);
+                     for (int i = 0; i < sizeof (morse) / sizeof (*morse); i++)
+                        if (morse[i].c == c)
+                        {
+                           tonep = tones = strdup (morse[i].m);
+                           break;
+                        }
+                     if (!tones)
+                     {
+                        off = morsef * 7;       // Word gap
+                        continue;
+                     }
+                     off = morsef * 3;  // inter character
+                     continue;
+                  }
+                  if (!tones)
+                  {             // End
+                     if (morsep)
+                        off = morsef * 7 - morseu;      // Word gap (we did morseu already)
+                     else
+                     {
+                        off = dtmfg;
+                        mode = SPK_IDLE;
+                     }
+                  }
                   continue;
                }
-               off = unit2;
-               static const char dtmf[] = "123A456B789C*0#D";
-               static const uint32_t col[] = { 1209, 1336, 1477, 1633 };
-               static const uint32_t row[] = { 697, 770, 852, 941 };
-               const char *p = strchr (dtmf, *dtmfmessagep);
-               if (p)
-               {
-                  freq1 = col[(p - dtmf) % 4];
-                  freq2 = row[(p - dtmf) / 4];
-                  on = unit1;
+               if (*tonep == '.')
+               {                // Morse dot
+                  tonelevel = morselevel;
+                  on = morseu;
+                  off = morseu;
+                  freq1 = morsefreq;
+                  freq2 = 0;
+               } else if (*tonep == '-')
+               {                // Morse dash
+                  tonelevel = morselevel;
+                  on = morseu * 3;
+                  off = morseu;
+                  freq1 = morsefreq;
+                  freq2 = 0;
+               } else
+               {                // DTMF
+                  tonelevel = dtmflevel;
+                  off = dtmfg;
+                  static const char dtmf[] = "123A456B789C*0#D";
+                  static const uint32_t col[] = { 1209, 1336, 1477, 1633 };
+                  static const uint32_t row[] = { 697, 770, 852, 941 };
+                  const char *p = strchr (dtmf, *tonep);
+                  if (p)
+                  {
+                     freq1 = col[(p - dtmf) % 4];
+                     freq2 = row[(p - dtmf) / 4];
+                     on = dtmfu;
+                  }
                }
-               dtmfmessagep++;
+               tonep++;
             }
             break;
          case SPK_SIP:
-            if (b.sip <= SIP_REGISTERED)
+            if (sip_mode <= SIP_REGISTERED)
                mode = SIP_IDLE;
             memset (samples, 0, sizeof (audio_t) * spksamples); // Silence
             break;
@@ -858,6 +870,7 @@ spk_task (void *arg)
          size_t l = 0;
          i2s_channel_write (*handle, samples, spkbytes * spkchannels * spksamples, &l, 100);
       }
+      spk_mode = SPK_IDLE;
       ESP_LOGE (TAG, "Spk stopped");
       revk_gpio_output (spkpwr, 0);
       if (!b.sharedi2s)
@@ -874,12 +887,17 @@ spk_task (void *arg)
 void
 sip_callback (sip_state_t state, uint8_t len, const uint8_t * data)
 {
-   if (b.sip != state)
+   if (sip_mode != state)
    {
-      b.sip = state;
+      sip_mode = state;
       ESP_LOGE (TAG, "SIP state %d", state);
       if (state == SIP_IC_ALERT)
-         sip_answer ();
+      {
+         if (spk_mode || mic_mode)
+            sip_hangup ();
+         else if (!button.set || !spklrc.set)
+            sip_answer ();
+      }
    }
 }
 
@@ -969,9 +987,11 @@ app_main ()
       {                         // Released
          if (press < 255)
          {
-            // TODO call answer if ic alerting
-            // TODO call hangup if in call
-            if (!b.micon && !b.sdpresent)
+            if (sip_mode == SIP_IC_ALERT)
+               sip_answer ();
+            else if (sip_mode == SIP_IC || sip_mode == SIP_OG || sip_mode == SIP_OG_ALERT)
+               sip_hangup ();
+            else if (!b.micon && !b.sdpresent)
                ESP_LOGE (TAG, "No card");
             else
                b.micon = 1 - b.micon;
