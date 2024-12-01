@@ -12,12 +12,15 @@ static const char TAG[] = "Audio";
 #include <driver/i2s_std.h>
 #include <driver/i2s_pdm.h>
 #include <driver/rtc_io.h>
+#include "esp_http_client.h"
 #include <esp_http_server.h>
+#include "esp_crt_bundle.h"
 #include "fft.h"
 #include "math.h"
 #include "esp_vfs_fat.h"
 #include <sys/dirent.h>
 #include <sip.h>
+#include "halib.h"
 
 typedef int16_t audio_t;
 #define	audio_max	32767
@@ -378,7 +381,7 @@ sd_task (void *arg)
                filesize = sdrectime * micfreq * micchannels * micbytes;
                char filename[260];
                int fileno = 0;
-               const char *oldest = NULL;
+               char *oldest = NULL;
                DIR *dir = opendir (sd_mount);
                if (dir)
                {
@@ -386,16 +389,19 @@ sd_task (void *arg)
                   while ((entry = readdir (dir)))
                      if (entry->d_type == DT_REG)
                      {
-                        const char *e = strrchr (entry->d_name, '.');
-                        if (!e)
+                        if (!isdigit ((int) *(unsigned char *) (entry->d_name)))
                            continue;
-                        if (strcasecmp (e, ".wav"))
+                        const char *e = strrchr (entry->d_name, '.');
+                        if (!e || strcasecmp (e, ".wav"))
                            continue;
                         int n = atoi (entry->d_name);
                         if (n > fileno)
                            fileno = n;
-                        if (!oldest || strcmp (entry->d_name, oldest) < 0)
-                           oldest = entry->d_name;
+                        if (!oldest || atoi (entry->d_name) < atoi (oldest))
+                        {
+                           free (oldest);
+                           oldest = strdup (entry->d_name);
+                        }
                      }
                   if (sddelete && oldest)
                   {             // Do we need to delete oldest
@@ -404,6 +410,7 @@ sd_task (void *arg)
                      {
                         snprintf (filename, sizeof (filename), "%s/%s", sd_mount, oldest);
                         unlink (filename);
+                        free (oldest);
                      }
                   }
                   closedir (dir);
@@ -416,7 +423,7 @@ sd_task (void *arg)
                   snprintf (filename, sizeof (filename), "%s/%04d-%04d%02d%02dT%02d%02d%02d.WAV", sd_mount, fileno,
                             t.tm_year + 1900, t.tm_mon + 1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec);
                else
-                  sprintf (filename, "%s/%04d.WAV", sd_mount, fileno);
+                  sprintf (filename, "%s/%04d-.WAV", sd_mount, fileno);
                FILE *o = fopen (filename, "w+");
                if (!o)
                   ESP_LOGE (TAG, "Failed to open file %s", filename);
@@ -503,6 +510,114 @@ sd_task (void *arg)
    rtc_gpio_set_direction_in_sleep (sdss.num, RTC_GPIO_MODE_OUTPUT_ONLY);
    rtc_gpio_set_level (sdss.num, 1 - sdss.invert);
    vTaskDelete (NULL);
+}
+
+void
+do_upload (void)
+{
+   while (1)
+   {
+      DIR *dir = opendir (sd_mount);
+      if (!dir)
+         break;
+      struct dirent *entry;
+      char *oldest = NULL;
+      char *filename = NULL;
+      while ((entry = readdir (dir)))
+         if (entry->d_type == DT_REG)
+         {
+            if (!isdigit ((int) *(unsigned char *) (entry->d_name)))
+               continue;
+            const char *e = strrchr (entry->d_name, '.');
+            if (!e || strcasecmp (e, ".wav"))
+               continue;
+            if (!oldest || atoi (entry->d_name) < atoi (oldest))
+            {
+               free (oldest);
+               oldest = strdup (entry->d_name);
+            }
+         }
+      if (oldest)
+      {
+         asprintf (&filename, "%s/%s", sd_mount, oldest);
+         ESP_LOGI (TAG, "Oldest %s", oldest);
+         free (oldest);
+      }
+      closedir (dir);
+      if (!oldest)
+         break;
+      struct stat s = { 0 };
+      if (stat (filename, &s))
+      {
+         free (filename);
+         break;
+      }
+      if (!s.st_size)
+      {
+         ESP_LOGI (TAG, "Empty file %s", filename);
+         unlink (filename);
+         free (filename);
+         continue;
+      }
+      ESP_LOGI (TAG, "Send %s", filename);
+      int response = 0;
+      FILE *i = fopen (filename, "r");
+      if (!i)
+      {
+         ESP_LOGI (TAG, "Cannot open %s", filename);
+         free (filename);
+         break;
+      }
+      char *u;
+      asprintf (&u, "%s?%s-%s", sdupload, hostname, filename + sizeof (sd_mount));
+      for (char *p = u + strlen (sdupload) + 1; *p; p++)
+         if (!is_alnum (*p) && *p != '.')
+            *p = '-';
+      esp_http_client_config_t config = {
+         .url = u,
+         .crt_bundle_attach = esp_crt_bundle_attach,
+         .method = HTTP_METHOD_POST,
+      };
+#define	BLOCK	2048
+      char *buf = mallocspi (BLOCK);
+      if (buf)
+      {
+         esp_http_client_handle_t client = esp_http_client_init (&config);
+         if (client)
+         {
+            esp_http_client_set_header (client, "Content-Type", "audio/wav");
+            ESP_LOGI (TAG, "Sending %s %ld", filename, s.st_size);
+            if (!esp_http_client_open (client, s.st_size))
+            {                   // Send
+               int total = 0;
+               int len = 0;
+               while ((len = fread (buf, 1, BLOCK, i)) > 0)
+               {
+                  total += len;
+                  esp_http_client_write (client, buf, len);
+               }
+               esp_http_client_fetch_headers (client);
+               esp_http_client_flush_response (client, &len);
+               response = esp_http_client_get_status_code (client);
+               esp_http_client_close (client);
+            }
+            esp_http_client_cleanup (client);
+         }
+      }
+      free (u);
+      free (buf);
+#undef	BLOCK
+      ESP_LOGI (TAG, "Sent, Response %d", response);
+      if (response / 100 == 2)
+      {
+         ESP_LOGI (TAG, "Delete %s", filename);
+         unlink (filename);
+      }
+      fclose (i);
+      free (filename);
+      if (response / 100 != 2)
+         break;
+   }
 }
 
 void
@@ -1153,7 +1268,13 @@ app_main ()
          REVK_ERR_CHECK (led_strip_refresh (led_status));
       }
    }
-   // TODO sdupload (set LEDs while doing it?)
+   if (*sdupload)
+   {                            // Upload
+      revk_led (led_status, 0, 255, revk_rgb ('B'));
+      revk_led (led_status, 1, 255, revk_rgb ('R'));
+      REVK_ERR_CHECK (led_strip_refresh (led_status));
+      do_upload ();
+   }
    // Go dark
    if (led_status)
    {
@@ -1161,6 +1282,7 @@ app_main ()
       revk_led (led_status, 1, 255, 0);
       REVK_ERR_CHECK (led_strip_refresh (led_status));
    }
+   revk_pre_shutdown ();
    // Alarm
    if (rtc_gpio_is_valid_gpio (button.num))
    {                            // Deep sleep
@@ -1173,7 +1295,6 @@ app_main ()
       gpio_wakeup_enable (button.num, GPIO_INTR_LOW_LEVEL);
       esp_sleep_enable_gpio_wakeup ();
    }
-   revk_disable_wifi ();
    // Shutdown
    sleep (1);                   // Allow tasks to end
    // Night night
