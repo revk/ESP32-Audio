@@ -187,6 +187,8 @@ revk_web_extra (httpd_req_t * req, int page)
    if (sdss.set)
    {
       revk_web_setting (req, NULL, "sdrectime");
+      revk_web_setting (req, NULL, "sdupload");
+      revk_web_setting (req, NULL, "sddelete");
       revk_web_setting (req, NULL, "wifilock");
    }
    if (vbus.set)
@@ -371,6 +373,8 @@ sd_task (void *arg)
             }
             if (mic_mode == MIC_RECORD && !sdfile)
             {                   // Start file
+               // TODO find lowest file to delete
+               // TODO sddelete if not enough space
                char filename[100];
                int fileno = 0;
                DIR *dir = opendir (sd_mount);
@@ -492,6 +496,31 @@ sd_task (void *arg)
 void
 mic_task (void *arg)
 {
+   led_strip_handle_t led_mic = NULL;
+   if (rgbled.set)
+   {
+      led_strip_config_t strip_config = {
+         .strip_gpio_num = rgbled.num,
+         .max_leds = 2,
+         .color_component_format = LED_STRIP_COLOR_COMPONENT_FMT_GRB,
+         .led_model = LED_MODEL_WS2812, // LED strip model
+         .flags.invert_out = rgbled.invert,
+      };
+      led_strip_rmt_config_t rmt_config = {
+         .clk_src = RMT_CLK_SRC_DEFAULT,        // different clock source can lead to different power consumption
+         .resolution_hz = 10 * 1000 * 1000,     // 10 MHz
+      };
+      REVK_ERR_CHECK (led_strip_new_rmt_device (&strip_config, &rmt_config, &led_mic));
+   }
+   void led (char c)
+   {
+      if (led_mic)
+      {
+         revk_led (led_mic, 0, 255, micchannels == 0 || micchannels == 2 || !micright ? revk_rgb (c) : 0);
+         revk_led (led_mic, 1, 255, micchannels == 0 || micchannels == 2 || micright ? revk_rgb (c) : 0);
+         REVK_ERR_CHECK (led_strip_refresh (led_mic));
+      }
+   }
    jo_t e (esp_err_t err, const char *msg)
    {                            // Error
       jo_t j = jo_object_alloc ();
@@ -514,9 +543,11 @@ mic_task (void *arg)
          mode = MIC_RECORD;
       if (!mode)
       {
+         led (rgbsd);
          usleep (100000);
          continue;
       }
+      revk_disable_upgrade ();
       esp_err_t err;
       i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG (I2S_NUM_AUTO, I2S_ROLE_MASTER);
       if (b.sharedi2s)
@@ -524,8 +555,9 @@ mic_task (void *arg)
       else
          err = i2s_new_channel (&chan_cfg, NULL, &mic_handle);
       uint8_t rawbytes = (micws.set ? micgain ? 4 : 3 : 2);     // No WS means PDM (16 bit)
-      if (sip_mode > SIP_REGISTERED)
+      if (mode == MIC_SIP)
       {
+         led ('C');
          micfreq = SIP_RATE;
          micchannels = 1;
          micbytes = 2;
@@ -606,7 +638,7 @@ mic_task (void *arg)
       while (!b.die && !(sip_mode <= SIP_REGISTERED && !b.micon))
       {
          size_t n = 0;
-         i2s_channel_read (mic_handle, raw ? : micaudio[sdin], micchannels * rawbytes * micsamples, &n, 100);
+         i2s_channel_read (mic_handle, raw ? : micaudio[sdin], micchannels * rawbytes * micsamples, &n, MICMS * 2);
          if (n < micchannels * rawbytes * micsamples)
             continue;
          if (raw)
@@ -641,7 +673,8 @@ mic_task (void *arg)
                sip_audio (micsamples, (void *) micaudio[sdin]);
             }
             break;
-         case MIC_RECORD:
+         case MIC_RECORD:      // These are not as fast as SIP, so do LED
+            led ('G');
             if ((sdin + 1) % MICQUEUE == sdout)
                ESP_LOGE (TAG, "Mic overflow");
             else
@@ -656,8 +689,10 @@ mic_task (void *arg)
       for (int i = 0; i < MICQUEUE; i++)
          free (micaudio[i]);
       i2s_del_channel (mic_handle);
+      revk_enable_upgrade ();
       ESP_LOGE (TAG, "Mic stopped");
    }
+   led ('K');
    vTaskDelete (NULL);
 }
 
@@ -881,7 +916,7 @@ spk_task (void *arg)
                   tonep++;
                }
                size_t l = 0;
-               i2s_channel_write (spk_handle, samples, spkbytes * spkchannels * spksamples, &l, 100);
+               i2s_channel_write (spk_handle, samples, spkbytes * spkchannels * spksamples, &l, SPKMS * 2);
             }
             break;
          case SPK_SIP:
@@ -996,22 +1031,6 @@ app_main ()
       };
       REVK_ERR_CHECK (led_strip_new_rmt_device (&strip_config, &rmt_config, &led_status));
    }
-   led_strip_handle_t led_record = NULL;
-   if (rgbrecord.set)
-   {
-      led_strip_config_t strip_config = {
-         .strip_gpio_num = rgbrecord.num,
-         .max_leds = 1,
-         .color_component_format = LED_STRIP_COLOR_COMPONENT_FMT_GRB,
-         .led_model = LED_MODEL_WS2812, // LED strip model
-         .flags.invert_out = rgbrecord.invert,
-      };
-      led_strip_rmt_config_t rmt_config = {
-         .clk_src = RMT_CLK_SRC_DEFAULT,        // different clock source can lead to different power consumption
-         .resolution_hz = 10 * 1000 * 1000,     // 10 MHz
-      };
-      REVK_ERR_CHECK (led_strip_new_rmt_device (&strip_config, &rmt_config, &led_record));
-   }
    // Tasks
    if (spklrc.set && spkbclk.set && spkdata.set)
       revk_task ("spk", spk_task, NULL, 8);
@@ -1063,7 +1082,7 @@ app_main ()
          {                      // Long press
             if (sip_mode == SIP_IC_ALERT)
                sip_hangup ();
-            else if (rtc_gpio_is_valid_gpio (button.num))
+            else
                b.die = 1;
          }
       } else if (press)
@@ -1086,33 +1105,33 @@ app_main ()
          revk_led (led_status, 0, 255, revk_blinker ());
          REVK_ERR_CHECK (led_strip_refresh (led_status));
       }
-      if (led_record)
-      {
-         revk_led (led_record, 0, 255, revk_rgb (rgbsd));
-         REVK_ERR_CHECK (led_strip_refresh (led_record));
-      }
    }
+   // TODO sdupload
    // Go dark
    if (led_status)
    {
       revk_led (led_status, 0, 255, 0);
       REVK_ERR_CHECK (led_strip_refresh (led_status));
    }
-   if (led_record)
-   {
-      revk_led (led_record, 0, 255, 0);
-      REVK_ERR_CHECK (led_strip_refresh (led_record));
-   }
    // Alarm
-   if (button.set && rtc_gpio_is_valid_gpio (button.num))
-   {
+   if (rtc_gpio_is_valid_gpio (button.num))
+   {                            // Deep sleep
       rtc_gpio_set_direction_in_sleep (button.num, RTC_GPIO_MODE_INPUT_ONLY);
       rtc_gpio_pullup_en (button.num);
       rtc_gpio_pulldown_dis (button.num);
       REVK_ERR_CHECK (esp_sleep_enable_ext0_wakeup (button.num, 1 - button.invert));
+   } else
+   {                            // Light sleep
+      gpio_wakeup_enable (button.num, GPIO_INTR_LOW_LEVEL);
+      esp_sleep_enable_gpio_wakeup ();
    }
    revk_disable_wifi ();
    // Shutdown
    sleep (1);                   // Allow tasks to end
-   esp_deep_sleep_start ();     // Night night
+   // Night night
+   if (rtc_gpio_is_valid_gpio (button.num))
+      esp_deep_sleep_start ();
+   else
+      esp_light_sleep_start ();
+   esp_restart ();
 }

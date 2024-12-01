@@ -17,13 +17,15 @@ gpio	sd.sck		15		// MicroSD SCK
 gpio	sd.cd		-17		// MicroSD CD
 gpio	sd.miso		16		// MicroSD MISO
 u32	sd.rectime	3600	.unit="s"	// Max record time per file
+s	sd.upload			// Where to post then delete files on power off
+bit	sd.delete	1		// Auto delete old files if needed
 
 gpio	button		-37		// Button
 gpio	charging	44		// Charging status
 gpio	vbus				// USB power status
 
 gpio	rgb.status	35		// Status LED
-gpio	rgb.record	3		// Recording LED
+gpio	rgb.led		3	.old="ledrecord"	// Mic/record LED
 
 u32	morse.freq	2000	.unit="Hz",.live=1		// Morse Tone frequency
 u8	morse.level	50	.unit="%",.live=1		// Morse Level 
