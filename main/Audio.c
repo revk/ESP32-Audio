@@ -186,7 +186,7 @@ revk_web_extra (httpd_req_t * req, int page)
    }
    if (sdss.set)
    {
-      if (rgbled.set)
+      if (micwe.set && rgbled.set)
          revk_web_setting (req, NULL, "micbeep");
       revk_web_setting (req, NULL, "sdrectime");
       revk_web_setting (req, NULL, "sdupload");
