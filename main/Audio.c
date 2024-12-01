@@ -12,12 +12,15 @@ static const char TAG[] = "Audio";
 #include <driver/i2s_std.h>
 #include <driver/i2s_pdm.h>
 #include <driver/rtc_io.h>
+#include "esp_http_client.h"
 #include <esp_http_server.h>
+#include "esp_crt_bundle.h"
 #include "fft.h"
 #include "math.h"
 #include "esp_vfs_fat.h"
 #include <sys/dirent.h>
 #include <sip.h>
+#include "halib.h"
 
 typedef int16_t audio_t;
 #define	audio_max	32767
@@ -186,7 +189,11 @@ revk_web_extra (httpd_req_t * req, int page)
    }
    if (sdss.set)
    {
+      if (micws.set && rgbled.set)
+         revk_web_setting (req, NULL, "micbeep");
       revk_web_setting (req, NULL, "sdrectime");
+      revk_web_setting (req, NULL, "sdupload");
+      revk_web_setting (req, NULL, "sddelete");
       revk_web_setting (req, NULL, "wifilock");
    }
    if (vbus.set)
@@ -371,8 +378,10 @@ sd_task (void *arg)
             }
             if (mic_mode == MIC_RECORD && !sdfile)
             {                   // Start file
-               char filename[100];
+               filesize = sdrectime * micfreq * micchannels * micbytes;
+               char filename[260];
                int fileno = 0;
+               char *oldest = NULL;
                DIR *dir = opendir (sd_mount);
                if (dir)
                {
@@ -380,15 +389,30 @@ sd_task (void *arg)
                   while ((entry = readdir (dir)))
                      if (entry->d_type == DT_REG)
                      {
-                        const char *e = strrchr (entry->d_name, '.');
-                        if (!e)
+                        if (!isdigit ((int) *(unsigned char *) (entry->d_name)))
                            continue;
-                        if (strcasecmp (e, ".wav"))
+                        const char *e = strrchr (entry->d_name, '.');
+                        if (!e || strcasecmp (e, ".wav"))
                            continue;
                         int n = atoi (entry->d_name);
                         if (n > fileno)
                            fileno = n;
+                        if (!oldest || atoi (entry->d_name) < atoi (oldest))
+                        {
+                           free (oldest);
+                           oldest = strdup (entry->d_name);
+                        }
                      }
+                  if (sddelete && oldest)
+                  {             // Do we need to delete oldest
+                     esp_vfs_fat_info (sd_mount, &sdsize, &sdfree);
+                     if (sdfree < filesize + 44 + 4096)
+                     {
+                        snprintf (filename, sizeof (filename), "%s/%s", sd_mount, oldest);
+                        unlink (filename);
+                        free (oldest);
+                     }
+                  }
                   closedir (dir);
                }
                fileno++;
@@ -396,17 +420,16 @@ sd_task (void *arg)
                struct tm t;
                localtime_r (&now, &t);
                if (t.tm_year >= 100)
-                  sprintf (filename, "%s/%04d-%04d%02d%02dT%02d%02d%02d.WAV", sd_mount, fileno, t.tm_year + 1900, t.tm_mon + 1,
-                           t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec);
+                  snprintf (filename, sizeof (filename), "%s/%04d-%04d%02d%02dT%02d%02d%02d.WAV", sd_mount, fileno,
+                            t.tm_year + 1900, t.tm_mon + 1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec);
                else
-                  sprintf (filename, "%s/%04d.WAV", sd_mount, fileno);
+                  sprintf (filename, "%s/%04d-.WAV", sd_mount, fileno);
                FILE *o = fopen (filename, "w+");
                if (!o)
                   ESP_LOGE (TAG, "Failed to open file %s", filename);
                else
                {
                   ESP_LOGI (TAG, "Recording opened %s", filename);
-                  filesize = sdrectime * micfreq * micchannels * micbytes;
                   struct
                   {
                      char filetypeblocid[4];
@@ -490,8 +513,156 @@ sd_task (void *arg)
 }
 
 void
+do_upload (void)
+{
+   while (1)
+   {
+      DIR *dir = opendir (sd_mount);
+      if (!dir)
+         break;
+      struct dirent *entry;
+      char *oldest = NULL;
+      char *filename = NULL;
+      while ((entry = readdir (dir)))
+         if (entry->d_type == DT_REG)
+         {
+            if (!isdigit ((int) *(unsigned char *) (entry->d_name)))
+               continue;
+            const char *e = strrchr (entry->d_name, '.');
+            if (!e || strcasecmp (e, ".wav"))
+               continue;
+            for (e = entry->d_name; *e && isdigit ((int) *(unsigned char *) e); e++);
+            if (*e != '-')
+               continue;
+            if (!oldest || atoi (entry->d_name) < atoi (oldest))
+            {
+               free (oldest);
+               oldest = strdup (entry->d_name);
+            }
+         }
+      if (oldest)
+      {
+         asprintf (&filename, "%s/%s", sd_mount, oldest);
+         free (oldest);
+      }
+      closedir (dir);
+      if (!oldest)
+         break;
+      struct stat s = { 0 };
+      if (stat (filename, &s))
+      {
+         free (filename);
+         break;
+      }
+      if (!s.st_size)
+      {
+         ESP_LOGI (TAG, "Empty file %s", filename);
+         unlink (filename);
+         free (filename);
+         continue;
+      }
+      ESP_LOGI (TAG, "Send %s", filename);
+      int response = 0;
+      FILE *i = fopen (filename, "r");
+      if (!i)
+      {
+         ESP_LOGI (TAG, "Cannot open %s", filename);
+         free (filename);
+         break;
+      }
+      char *u;
+      asprintf (&u, "%s?%s-%s", sdupload, hostname, filename + sizeof (sd_mount));
+      for (char *p = u + strlen (sdupload) + 1; *p; p++)
+         if (!is_alnum (*p) && *p != '.')
+            *p = '-';
+      esp_http_client_config_t config = {
+         .url = u,
+         .crt_bundle_attach = esp_crt_bundle_attach,
+         .method = HTTP_METHOD_POST,
+      };
+#define	BLOCK	2048
+      char *buf = mallocspi (BLOCK);
+      if (buf)
+      {
+         esp_http_client_handle_t client = esp_http_client_init (&config);
+         if (client)
+         {
+            esp_http_client_set_header (client, "Content-Type", "audio/wav");
+            ESP_LOGI (TAG, "Sending %s %ld", filename, s.st_size);
+            if (!esp_http_client_open (client, s.st_size))
+            {                   // Send
+               int total = 0;
+               int len = 0;
+               while ((len = fread (buf, 1, BLOCK, i)) > 0)
+               {
+                  total += len;
+                  esp_http_client_write (client, buf, len);
+               }
+               esp_http_client_fetch_headers (client);
+               esp_http_client_flush_response (client, &len);
+               response = esp_http_client_get_status_code (client);
+               esp_http_client_close (client);
+            }
+            esp_http_client_cleanup (client);
+         }
+      }
+      free (u);
+      free (buf);
+#undef	BLOCK
+      ESP_LOGI (TAG, "Sent, Response %d", response);
+      if (response / 100 == 2)
+      {
+         char *new = strdup (filename);
+         for (char *e = new; *e; e++)
+            if (*e == '-')
+            {
+               *e = '_';
+               break;
+            }
+         if (rename (filename, new))
+         {
+            free (filename);
+            free (new);
+            break;
+         }
+         ESP_LOGI (TAG, "Rename %s %s", filename, new);
+         free (new);
+      }
+      fclose (i);
+      free (filename);
+      if (response / 100 != 2)
+         break;
+   }
+}
+
+void
 mic_task (void *arg)
 {
+   led_strip_handle_t led_mic = NULL;
+   if (rgbled.set)
+   {
+      led_strip_config_t strip_config = {
+         .strip_gpio_num = rgbled.num,
+         .max_leds = 2,
+         .color_component_format = LED_STRIP_COLOR_COMPONENT_FMT_GRB,
+         .led_model = LED_MODEL_WS2812, // LED strip model
+         .flags.invert_out = rgbled.invert,
+      };
+      led_strip_rmt_config_t rmt_config = {
+         .clk_src = RMT_CLK_SRC_DEFAULT,        // different clock source can lead to different power consumption
+         .resolution_hz = 10 * 1000 * 1000,     // 10 MHz
+      };
+      REVK_ERR_CHECK (led_strip_new_rmt_device (&strip_config, &rmt_config, &led_mic));
+   }
+   void led (char c)
+   {
+      if (led_mic)
+      {
+         revk_led (led_mic, 0, 255, micchannels == 0 || micchannels == 2 || !micright ? revk_rgb (c) : 0);
+         revk_led (led_mic, 1, 255, micchannels == 0 || micchannels == 2 || micright ? revk_rgb (c) : 0);
+         REVK_ERR_CHECK (led_strip_refresh (led_mic));
+      }
+   }
    jo_t e (esp_err_t err, const char *msg)
    {                            // Error
       jo_t j = jo_object_alloc ();
@@ -514,9 +685,11 @@ mic_task (void *arg)
          mode = MIC_RECORD;
       if (!mode)
       {
+         led (rgbsd);
          usleep (100000);
          continue;
       }
+      revk_disable_upgrade ();
       esp_err_t err;
       i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG (I2S_NUM_AUTO, I2S_ROLE_MASTER);
       if (b.sharedi2s)
@@ -524,8 +697,9 @@ mic_task (void *arg)
       else
          err = i2s_new_channel (&chan_cfg, NULL, &mic_handle);
       uint8_t rawbytes = (micws.set ? micgain ? 4 : 3 : 2);     // No WS means PDM (16 bit)
-      if (sip_mode > SIP_REGISTERED)
+      if (mode == MIC_SIP)
       {
+         led ('C');
          micfreq = SIP_RATE;
          micchannels = 1;
          micbytes = 2;
@@ -601,12 +775,21 @@ mic_task (void *arg)
          return;
       }
       mic_mode = mode;
+      uint8_t beep = 0;
+      uint8_t phase = 0;
+      if (micbeep)
+      {
+         beep = 1000 / MICMS + 1;
+         led ('R');
+      }
       ESP_LOGE (TAG, "Mic started mode %d, %ld*%d*%d bits at %ldHz - mapped to %d*%d bits", mode, micsamples, micchannels,
                 rawbytes * 8, micfreq, micchannels, micbytes * 8);
       while (!b.die && !(sip_mode <= SIP_REGISTERED && !b.micon))
       {
+         if (beep && !--beep)
+            led ('G');
          size_t n = 0;
-         i2s_channel_read (mic_handle, raw ? : micaudio[sdin], micchannels * rawbytes * micsamples, &n, 100);
+         i2s_channel_read (mic_handle, raw ? : micaudio[sdin], micchannels * rawbytes * micsamples, &n, MICMS * 2);
          if (n < micchannels * rawbytes * micsamples)
             continue;
          if (raw)
@@ -632,6 +815,7 @@ mic_task (void *arg)
          switch (mic_mode)
          {
          case MIC_SIP:
+            if (sip_mode == SIP_IC || sip_mode == SIP_OG)
             {
                int16_t *i = (void *) micaudio[sdin];
                uint8_t *o = (void *) micaudio[sdin];
@@ -640,11 +824,30 @@ mic_task (void *arg)
                sip_audio (micsamples, (void *) micaudio[sdin]);
             }
             break;
-         case MIC_RECORD:
-            if ((sdin + 1) % MICQUEUE == sdout)
-               ESP_LOGE (TAG, "Mic overflow");
-            else
-               sdin = (sdin + 1) % MICQUEUE;
+         case MIC_RECORD:      // These are not as fast as SIP, so do LED
+            {
+               if (beep)
+               {
+                  uint8_t *p = (void *) micaudio[sdin];
+                  uint8_t f = ((micrate / 2000) / 2 ? : 1);
+                  for (int s = 0; s < micsamples; s++)
+                  {
+                     for (int c = 0; c < micchannels; c++)
+                     {
+                        for (int z = 0; z < micbytes - 1; z++)
+                           *p++ = 0;
+                        *p++ = ((phase >= f) ? 0xF8 : 0x08);
+                     }
+                     phase++;
+                     if (phase == f * 2)
+                        phase = 0;
+                  }
+               }
+               if ((sdin + 1) % MICQUEUE == sdout)
+                  ESP_LOGE (TAG, "Mic overflow");
+               else
+                  sdin = (sdin + 1) % MICQUEUE;
+            }
             break;
          default:
          }
@@ -655,8 +858,10 @@ mic_task (void *arg)
       for (int i = 0; i < MICQUEUE; i++)
          free (micaudio[i]);
       i2s_del_channel (mic_handle);
+      revk_enable_upgrade ();
       ESP_LOGE (TAG, "Mic stopped");
    }
+   led ('K');
    vTaskDelete (NULL);
 }
 
@@ -763,10 +968,10 @@ spk_task (void *arg)
       }
       if (mode == SPK_SIP)
       {
-         level1 = 50;           // Ring tone
-         freq1 = 400;
-         level2 = 50;
-         freq2 = 450;
+         level1 = 50;           // Ring beeps
+         freq1 = 1000;
+         on = SIP_RATE / 3;
+         off = SIP_RATE / 10;
       }
       if (mode == SPK_TONE)
       {
@@ -790,6 +995,7 @@ spk_task (void *arg)
                   samples[i] = 0;
                   if (on)
                   {
+                     on--;
                      if (freq2)
                      {
                         samples[i] = (tablesin (phase1) * (int) level1 + tablesin (phase2) * (int) level2) / 100 / 4;
@@ -801,7 +1007,6 @@ spk_task (void *arg)
                      phase1 += freq1;
                      if (phase1 >= SIP_RATE)
                         phase1 -= SIP_RATE;
-                     on--;
                      continue;
                   }
                   if (off)
@@ -833,22 +1038,19 @@ spk_task (void *arg)
                            }
                         if (!tones)
                         {
-                           off = morsef * 7;    // Word gap
+                           off = morsef * 7 - morseu;   // Word gap
                            continue;
                         }
-                        off = morsef * 3;       // inter character
+                        off = morsef * 3 - morseu;      // inter character
                         continue;
                      }
-                     if (!tones)
-                     {          // End
-                        if (morsep)
-                           off = morsef * 7 - morseu;   // Word gap (we did morseu already)
-                        else
-                        {
-                           off = spkfreq;       // Long gap
-                           mode = SPK_IDLE;
-                        }
-                     }
+                  }
+                  if (!tones)
+                  {             // End
+                     if (morsep)
+                        off = morsef * 7 - morseu;      // Word gap (we did morseu already)
+                     else
+                        mode = SPK_IDLE;
                      continue;
                   }
                   if (*tonep == '.')
@@ -883,7 +1085,7 @@ spk_task (void *arg)
                   tonep++;
                }
                size_t l = 0;
-               i2s_channel_write (spk_handle, samples, spkbytes * spkchannels * spksamples, &l, 100);
+               i2s_channel_write (spk_handle, samples, spkbytes * spkchannels * spksamples, &l, SPKMS * 2);
             }
             break;
          case SPK_SIP:
@@ -894,13 +1096,25 @@ spk_task (void *arg)
                // TODO this is continuous, needs cycling as normal ringing tone
                for (int i = 0; i < spksamples; i++)
                {
-                  samples[i] = (tablesin (phase1) * (int) level1 + tablesin (phase2) * (int) level2) / 100 / 4;
-                  phase1 += freq1;
-                  if (phase1 >= SIP_RATE)
-                     phase1 -= SIP_RATE;
-                  phase2 += freq2;
-                  if (phase2 >= SIP_RATE)
-                     phase2 -= SIP_RATE;
+                  if (on)
+                  {
+                     on--;
+                     samples[i] = tablesin (phase1) * (int) level1 / 100 / 2;
+                     phase1 += freq1;
+                     if (phase1 >= SIP_RATE)
+                        phase1 -= SIP_RATE;
+                     continue;
+                  }
+                  if (off)
+                  {
+                     off--;
+                     samples[i] = 0;
+                     if (!off)
+                     {
+                        freq1 = 3000 - freq1;
+                        on = off = SIP_RATE / 10;
+                     }
+                  }
                }
                size_t l = 0;
                i2s_channel_write (spk_handle, samples, spkbytes * spkchannels * spksamples, &l, 100);
@@ -924,6 +1138,13 @@ spk_task (void *arg)
 }
 
 void
+sip_debug (uint8_t rx, struct sockaddr_storage *addr, const char *message)
+{
+   ESP_LOGE (rx ? "Rx" : "Tx", "%s", message);
+   // TODO log to MQTT
+}
+
+void
 sip_callback (sip_state_t state, uint8_t len, const uint8_t * data)
 {
    if (sip_mode != state)
@@ -932,10 +1153,15 @@ sip_callback (sip_state_t state, uint8_t len, const uint8_t * data)
       ESP_LOGE (TAG, "SIP state %d", state);
       if (state == SIP_IC_ALERT)
       {
-         if (spk_mode || mic_mode)
+         if ((spk_mode && spk_mode != SPK_SIP) || (mic_mode && mic_mode != MIC_SIP))
+         {
+            ESP_LOGE (TAG, "Busy %d/%d", spk_mode, mic_mode);
             sip_hangup ();
-         else if (!button.set || !spklrc.set)
+         } else if (!button.set || !spklrc.set)
+         {
+            ESP_LOGE (TAG, "Answer");
             sip_answer ();
+         }
       }
    }
    if (data && len == SIP_BYTES && spk_mode == SPK_SIP && (state == SIP_IC || state == SIP_OG || state == SIP_OG_ALERT))
@@ -970,7 +1196,7 @@ app_main ()
    {
       led_strip_config_t strip_config = {
          .strip_gpio_num = rgbstatus.num,
-         .max_leds = 1,
+         .max_leds = 2,
          .color_component_format = LED_STRIP_COLOR_COMPONENT_FMT_GRB,
          .led_model = LED_MODEL_WS2812, // LED strip model
          .flags.invert_out = rgbstatus.invert,
@@ -981,22 +1207,6 @@ app_main ()
       };
       REVK_ERR_CHECK (led_strip_new_rmt_device (&strip_config, &rmt_config, &led_status));
    }
-   led_strip_handle_t led_record = NULL;
-   if (rgbrecord.set)
-   {
-      led_strip_config_t strip_config = {
-         .strip_gpio_num = rgbrecord.num,
-         .max_leds = 1,
-         .color_component_format = LED_STRIP_COLOR_COMPONENT_FMT_GRB,
-         .led_model = LED_MODEL_WS2812, // LED strip model
-         .flags.invert_out = rgbrecord.invert,
-      };
-      led_strip_rmt_config_t rmt_config = {
-         .clk_src = RMT_CLK_SRC_DEFAULT,        // different clock source can lead to different power consumption
-         .resolution_hz = 10 * 1000 * 1000,     // 10 MHz
-      };
-      REVK_ERR_CHECK (led_strip_new_rmt_device (&strip_config, &rmt_config, &led_record));
-   }
    // Tasks
    if (spklrc.set && spkbclk.set && spkdata.set)
       revk_task ("spk", spk_task, NULL, 8);
@@ -1006,7 +1216,7 @@ app_main ()
       revk_task ("sd", sd_task, NULL, 16);
 
    if (*siphost)
-      sip_register (siphost, sipuser, sippass, sip_callback);
+      sip_register (siphost, sipuser, sippass, sip_callback, sipdebug ? sip_debug : NULL);
 
    // Buttons and LEDs
    revk_gpio_input (button);
@@ -1044,12 +1254,16 @@ app_main ()
       {                         // Pressed
          if (press < 255)
             press++;
-         if (press == 30 && rtc_gpio_is_valid_gpio (button.num))
-            b.die = 1;          // Long press - shutdown (if we can wake up later)S
-         // TODO call hangup if ic alerting
+         if (press == 30)
+         {                      // Long press
+            if (sip_mode == SIP_IC_ALERT)
+               sip_hangup ();
+            else
+               b.die = 1;
+         }
       } else if (press)
       {                         // Released
-         if (press < 255)
+         if (press < 30)
          {
             if (sip_mode == SIP_IC_ALERT)
                sip_answer ();
@@ -1065,35 +1279,43 @@ app_main ()
       if (led_status)
       {
          revk_led (led_status, 0, 255, revk_blinker ());
+         revk_led (led_status, 1, 255, revk_blinker ());        // TODO two LED working?
          REVK_ERR_CHECK (led_strip_refresh (led_status));
       }
-      if (led_record)
-      {
-         revk_led (led_record, 0, 255, revk_rgb (rgbsd));
-         REVK_ERR_CHECK (led_strip_refresh (led_record));
-      }
+   }
+   if (*sdupload)
+   {                            // Upload
+      revk_led (led_status, 0, 255, revk_rgb ('B'));
+      revk_led (led_status, 1, 255, revk_rgb ('R'));
+      REVK_ERR_CHECK (led_strip_refresh (led_status));
+      do_upload ();
    }
    // Go dark
    if (led_status)
    {
       revk_led (led_status, 0, 255, 0);
+      revk_led (led_status, 1, 255, 0);
       REVK_ERR_CHECK (led_strip_refresh (led_status));
    }
-   if (led_record)
-   {
-      revk_led (led_record, 0, 255, 0);
-      REVK_ERR_CHECK (led_strip_refresh (led_record));
-   }
+   revk_pre_shutdown ();
    // Alarm
-   if (button.set && rtc_gpio_is_valid_gpio (button.num))
-   {
+   if (rtc_gpio_is_valid_gpio (button.num))
+   {                            // Deep sleep
       rtc_gpio_set_direction_in_sleep (button.num, RTC_GPIO_MODE_INPUT_ONLY);
       rtc_gpio_pullup_en (button.num);
       rtc_gpio_pulldown_dis (button.num);
       REVK_ERR_CHECK (esp_sleep_enable_ext0_wakeup (button.num, 1 - button.invert));
+   } else
+   {                            // Light sleep
+      gpio_wakeup_enable (button.num, GPIO_INTR_LOW_LEVEL);
+      esp_sleep_enable_gpio_wakeup ();
    }
-   revk_disable_wifi ();
    // Shutdown
    sleep (1);                   // Allow tasks to end
-   esp_deep_sleep_start ();     // Night night
+   // Night night
+   if (rtc_gpio_is_valid_gpio (button.num))
+      esp_deep_sleep_start ();
+   else
+      esp_light_sleep_start ();
+   esp_restart ();
 }

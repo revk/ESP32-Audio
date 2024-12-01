@@ -6,6 +6,15 @@ The software provides working for a number of different use cases.
 
 The hardware is an audio recorder, but the [LED](https://github.com/revk/ESP32-LED) project also has audio hardware with microphones and speakers.
 
+## Button
+
+Button works with short or long press (long is 3s).
+
+* press to answer or end incoming SIP call
+* press to start or stop recording
+* hold to reject incoming SIP call
+* hold to enter power off more, press to restart (will upload files at this point if option selected)
+
 ## Microphone
 
 The software is designed to work with I2S audio input, and is coded and tested for two specific microphones. Others may work, but I2S has a number of options - so ask me if you need some other settings.
@@ -41,12 +50,10 @@ The output via the speaker can be one of the following - normally managed via MQ
 
 * Morse code
 * DTMF
-* Playing a WAV file from SD card
+* Playing a WAV file from SD card (TODO)
 * SIP (see below)
 
 The format will depend on the source - the MAX98357A can handle 16, 24, or 32 bits per channel.
-
-(WAV file playing not yet)
 
 ## Audio recorder
 
@@ -56,9 +63,10 @@ Options are planned:-
 
 * Stream audio over WiFI by some means
 * Stream audio over bluetooth, if ever I work out how to do that
-* Send and delete WAV files after a recording is complete (http POST)
 
-(For now, it is simply WAV file on Micro SD card)
+An option exists to upload files to a web page as a `POST`, renaming the file slightly once uploaded so not uploaded twice. This is done when you hold the button to *power off`*.
+
+An option exists to delete old files if space needed for new file.
 
 ## SIP working
 
@@ -66,7 +74,7 @@ The software allows settings `siphost`, `sipuser`, and `sippass`, such that the 
 
 Once registered it can then accept a call, and pass audio both ways over RTP, 8kHz alaw. Only one call at a time.
 
-* The microphone is changed to mono (selected by `micright`) 8kHz, and either 16 bit PDM, or processed 24 bit to 16 bit using `micgain`, and then companded to alaw.
+* The microphone is changed to mono (channel selected by `micright`) 8kHz, and either 16 bit PDM, or processed 24 bit to 16 bit using `micgain`, and then companded to alaw.
 * The speaker is sent dual mono audio expanded from 8kHz alaw to 16 bits per sample.
 
 Note that there is no echo cancellation, so a caller is likely to hear their own audio come back to them.
