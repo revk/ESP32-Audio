@@ -646,6 +646,7 @@ mic_task (void *arg)
       }
       mic_mode = mode;
       uint8_t beep = 0;
+      uint8_t phase = 0;
       if (micbeep)
       {
          beep = 1000 / MICMS + 1;
@@ -698,12 +699,18 @@ mic_task (void *arg)
                if (beep)
                {
                   uint8_t *p = (void *) micaudio[sdin];
-                  int s = micchannels * micsamples;
-                  while (s--)
-                  {             // Beep - square 1kHz
-                     for (int z = 0; z < micbytes - 1; z++)
-                        *p++ = 0;
-                     *p++ = (((s / (1000 / MICMS)) & 1) ? 0xE0 : 0x20);
+                  uint8_t f = ((micrate / 2000) / 2 ? : 1);
+                  for (int s = 0; s < micsamples; s++)
+                  {
+                     for (int c = 0; c < micchannels; c++)
+                     {
+                        for (int z = 0; z < micbytes - 1; z++)
+                           *p++ = 0;
+                        *p++ = ((phase >= f) ? 0xF8 : 0x08);
+                     }
+                     phase++;
+                     if (phase == f * 2)
+                        phase = 0;
                   }
                }
                if ((sdin + 1) % MICQUEUE == sdout)
