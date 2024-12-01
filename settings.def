@@ -18,8 +18,8 @@ gpio	sd.sck		15		// MicroSD SCK
 gpio	sd.cd		-17		// MicroSD CD
 gpio	sd.miso		16		// MicroSD MISO
 u32	sd.rectime	3600	.unit="s"	// Max record time per file
-s	sd.upload		.live=1	// Where to post then delete files on power off
-bit	sd.delete	1	.live=1	// Auto delete old files if needed
+s	sd.upload		.live=1	// Where to post, then delete, files on power off
+bit	sd.delete	1	.live=1	// Auto delete old files if space needed for new file
 
 gpio	button		-37		// Button
 gpio	charging	44		// Charging status

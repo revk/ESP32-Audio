@@ -531,6 +531,9 @@ do_upload (void)
             const char *e = strrchr (entry->d_name, '.');
             if (!e || strcasecmp (e, ".wav"))
                continue;
+            for (e = entry->d_name; *e && isdigit ((int) *(unsigned char *) e); e++);
+            if (*e != '-')
+               continue;
             if (!oldest || atoi (entry->d_name) < atoi (oldest))
             {
                free (oldest);
@@ -540,7 +543,6 @@ do_upload (void)
       if (oldest)
       {
          asprintf (&filename, "%s/%s", sd_mount, oldest);
-         ESP_LOGI (TAG, "Oldest %s", oldest);
          free (oldest);
       }
       closedir (dir);
@@ -610,8 +612,21 @@ do_upload (void)
       ESP_LOGI (TAG, "Sent, Response %d", response);
       if (response / 100 == 2)
       {
-         ESP_LOGI (TAG, "Delete %s", filename);
-         unlink (filename);
+         char *new = strdup (filename);
+         for (char *e = new; *e; e++)
+            if (*e == '-')
+            {
+               *e = '_';
+               break;
+            }
+         if (rename (filename, new))
+         {
+            free (filename);
+            free (new);
+            break;
+         }
+         ESP_LOGI (TAG, "Rename %s %s", filename, new);
+         free (new);
       }
       fclose (i);
       free (filename);
