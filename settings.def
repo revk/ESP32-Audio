@@ -6,10 +6,11 @@ gpio	spk.data			// Speaker Data
 gpio	mic.data	1		// Microphone Data / SD
 gpio	mic.clock	11		// Microphone Clock / SCK
 gpio	mic.ws		0		// Microphone WS (not set for PDM)
-u32	mic.rate	44100 .unit="Hz"	// Microphone Input rate
-u8	mic.gain	4		// Microphone Multiply input (set 0 for 24 bit raw)
-bit	mic.stereo	1		// Microphone Stereo
-bit	mic.right			// Microphone use right channel
+u32	mic.rate	44100 .unit="Hz",.live=1	// Microphone Input rate
+u8	mic.gain	4	.live=1		// Microphone Multiply input (set 0 for 24 bit raw)
+bit	mic.stereo	1	.live=1		// Microphone Stereo
+bit	mic.right		.live=1		// Microphone use right channel
+bit	mic.beep		.live=1		// Add sync beep and red LED on start of recording
 
 gpio	sd.ss		12		// MicroSD SS
 gpio	sd.mosi		13		// MicroSD MOSI
@@ -17,8 +18,8 @@ gpio	sd.sck		15		// MicroSD SCK
 gpio	sd.cd		-17		// MicroSD CD
 gpio	sd.miso		16		// MicroSD MISO
 u32	sd.rectime	3600	.unit="s"	// Max record time per file
-s	sd.upload			// Where to post then delete files on power off
-bit	sd.delete	1		// Auto delete old files if needed
+s	sd.upload		.live=1	// Where to post then delete files on power off
+bit	sd.delete	1	.live=1	// Auto delete old files if needed
 
 gpio	button		-37		// Button
 gpio	charging	44		// Charging status
@@ -29,8 +30,8 @@ gpio	rgb.led		3	.old="ledrecord"	// Mic/record LED
 
 u32	morse.freq	2000	.unit="Hz",.live=1		// Morse Tone frequency
 u8	morse.level	50	.unit="%",.live=1		// Morse Level 
-u8	morse.wpm	20	.unit="/min"		// Morse basic rate
-u8	morse.fwpm	20	.unit="/min"		// Morse Farnsworth rate
+u8	morse.wpm	20	.unit="/min",.live=1		// Morse basic rate
+u8	morse.fwpm	20	.unit="/min",.live=1		// Morse Farnsworth rate
 s	morse.start	"Hello world"			// Morse initial message on power on
 
 u8	dtmf.level	50	.unit="%",.live=1		// DTMF Level
@@ -40,6 +41,7 @@ u8	dtmf.gap	0.100	.unit="s",.live=1,.decimal=3		// DTMF Gap time
 s	sip.host		.hide=1	// SIP server hostname
 s	sip.user		.hide=1	// SIP registration username
 s	sip.pass		.hide=1	// SIP registration password
+bit	sip.debug		.live=1	// SIP debug messages to MQTT
 
 bit	wifi.lock	1	.hide=1	// Lock down settings/AP mode when SD card inserted
 bit	wifi.usb		.hide=1	// Only have wifi when on USB power

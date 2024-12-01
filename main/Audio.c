@@ -186,6 +186,8 @@ revk_web_extra (httpd_req_t * req, int page)
    }
    if (sdss.set)
    {
+      if (rgbled.set)
+         revk_web_setting (req, NULL, "micbeep");
       revk_web_setting (req, NULL, "sdrectime");
       revk_web_setting (req, NULL, "sdupload");
       revk_web_setting (req, NULL, "sddelete");
@@ -373,10 +375,10 @@ sd_task (void *arg)
             }
             if (mic_mode == MIC_RECORD && !sdfile)
             {                   // Start file
-               // TODO find lowest file to delete
-               // TODO sddelete if not enough space
-               char filename[100];
+               filesize = sdrectime * micfreq * micchannels * micbytes;
+               char filename[260];
                int fileno = 0;
+               const char *oldest = NULL;
                DIR *dir = opendir (sd_mount);
                if (dir)
                {
@@ -392,7 +394,18 @@ sd_task (void *arg)
                         int n = atoi (entry->d_name);
                         if (n > fileno)
                            fileno = n;
+                        if (!oldest || strcmp (entry->d_name, oldest) < 0)
+                           oldest = entry->d_name;
                      }
+                  if (sddelete && oldest)
+                  {             // Do we need to delete oldest
+                     esp_vfs_fat_info (sd_mount, &sdsize, &sdfree);
+                     if (sdfree < filesize + 44 + 4096)
+                     {
+                        snprintf (filename, sizeof (filename), "%s/%s", sd_mount, oldest);
+                        unlink (filename);
+                     }
+                  }
                   closedir (dir);
                }
                fileno++;
@@ -400,8 +413,8 @@ sd_task (void *arg)
                struct tm t;
                localtime_r (&now, &t);
                if (t.tm_year >= 100)
-                  sprintf (filename, "%s/%04d-%04d%02d%02dT%02d%02d%02d.WAV", sd_mount, fileno, t.tm_year + 1900, t.tm_mon + 1,
-                           t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec);
+                  snprintf (filename, sizeof (filename), "%s/%04d-%04d%02d%02dT%02d%02d%02d.WAV", sd_mount, fileno,
+                            t.tm_year + 1900, t.tm_mon + 1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec);
                else
                   sprintf (filename, "%s/%04d.WAV", sd_mount, fileno);
                FILE *o = fopen (filename, "w+");
@@ -410,7 +423,6 @@ sd_task (void *arg)
                else
                {
                   ESP_LOGI (TAG, "Recording opened %s", filename);
-                  filesize = sdrectime * micfreq * micchannels * micbytes;
                   struct
                   {
                      char filetypeblocid[4];
@@ -633,10 +645,18 @@ mic_task (void *arg)
          return;
       }
       mic_mode = mode;
+      uint8_t beep = 0;
+      if (micbeep)
+      {
+         beep = 1000 / MICMS + 1;
+         led ('R');
+      }
       ESP_LOGE (TAG, "Mic started mode %d, %ld*%d*%d bits at %ldHz - mapped to %d*%d bits", mode, micsamples, micchannels,
                 rawbytes * 8, micfreq, micchannels, micbytes * 8);
       while (!b.die && !(sip_mode <= SIP_REGISTERED && !b.micon))
       {
+         if (beep && !--beep)
+            led ('G');
          size_t n = 0;
          i2s_channel_read (mic_handle, raw ? : micaudio[sdin], micchannels * rawbytes * micsamples, &n, MICMS * 2);
          if (n < micchannels * rawbytes * micsamples)
@@ -674,11 +694,23 @@ mic_task (void *arg)
             }
             break;
          case MIC_RECORD:      // These are not as fast as SIP, so do LED
-            led ('G');
-            if ((sdin + 1) % MICQUEUE == sdout)
-               ESP_LOGE (TAG, "Mic overflow");
-            else
-               sdin = (sdin + 1) % MICQUEUE;
+            {
+               if (beep)
+               {
+                  uint8_t *p = (void *) micaudio[sdin];
+                  int s = micchannels * micsamples;
+                  while (s--)
+                  {             // Beep - square 1kHz
+                     for (int z = 0; z < micbytes - 1; z++)
+                        *p++ = 0;
+                     *p++ = (((s / (1000 / MICMS)) & 1) ? 0xE0 : 0x20);
+                  }
+               }
+               if ((sdin + 1) % MICQUEUE == sdout)
+                  ESP_LOGE (TAG, "Mic overflow");
+               else
+                  sdin = (sdin + 1) % MICQUEUE;
+            }
             break;
          default:
          }
@@ -969,6 +1001,13 @@ spk_task (void *arg)
 }
 
 void
+sip_debug (uint8_t rx, struct sockaddr_storage *addr, const char *message)
+{
+   ESP_LOGE (rx ? "Rx" : "Tx", "%s", message);
+   // TODO log to MQTT
+}
+
+void
 sip_callback (sip_state_t state, uint8_t len, const uint8_t * data)
 {
    if (sip_mode != state)
@@ -1020,7 +1059,7 @@ app_main ()
    {
       led_strip_config_t strip_config = {
          .strip_gpio_num = rgbstatus.num,
-         .max_leds = 1,
+         .max_leds = 2,
          .color_component_format = LED_STRIP_COLOR_COMPONENT_FMT_GRB,
          .led_model = LED_MODEL_WS2812, // LED strip model
          .flags.invert_out = rgbstatus.invert,
@@ -1040,7 +1079,7 @@ app_main ()
       revk_task ("sd", sd_task, NULL, 16);
 
    if (*siphost)
-      sip_register (siphost, sipuser, sippass, sip_callback);
+      sip_register (siphost, sipuser, sippass, sip_callback, sipdebug ? sip_debug : NULL);
 
    // Buttons and LEDs
    revk_gpio_input (button);
@@ -1103,14 +1142,16 @@ app_main ()
       if (led_status)
       {
          revk_led (led_status, 0, 255, revk_blinker ());
+         revk_led (led_status, 1, 255, revk_blinker ());        // TODO two LED working?
          REVK_ERR_CHECK (led_strip_refresh (led_status));
       }
    }
-   // TODO sdupload
+   // TODO sdupload (set LEDs while doing it?)
    // Go dark
    if (led_status)
    {
       revk_led (led_status, 0, 255, 0);
+      revk_led (led_status, 1, 255, 0);
       REVK_ERR_CHECK (led_strip_refresh (led_status));
    }
    // Alarm
