@@ -8,7 +8,7 @@
 	)
 	(paper "A4")
 	(title_block
-		(title "PCB-LED")
+		(title "Intercom")
 		(rev "1")
 		(company "Adrian Kennard, Andrews & Arnold Ltd")
 	)
