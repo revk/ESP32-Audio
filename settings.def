@@ -45,4 +45,4 @@ bit	sip.debug		.live=1	// SIP debug messages to MQTT
 
 bit	wifi.lock	1	.hide=1	// Lock down settings/AP mode when SD card inserted
 bit	wifi.usb		.hide=1	// Only have wifi when on USB power
-bit	wifi.record		.hide=1 // WiFi off during recording
+bit	wifi.record	1	.hide=1 // WiFi off during recording
