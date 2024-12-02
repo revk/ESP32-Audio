@@ -1,10 +1,18 @@
-# ESP32-Audio
+# Open†Mic
+
+(† Open source)
 
 This project provides software and PCB designs for working with I2S microphone and speaker, most notably a self contacined battery opertated audio recorder to micro SD card.
 
 The software provides working for a number of different use cases.
 
 The hardware is an audio recorder, but the [LED](https://github.com/revk/ESP32-LED) project also has audio hardware with microphones and speakers.
+
+## Why use this?
+
+There are loads of microphones and dictaphones at sensible prices, so why use this?
+
+The main reason is flexibility - it is open source - the hardware can do a lot, and it already allows record to SD and upload by web post. It can eventually be a Bluetooth microphone, or a telephone or intercom, etc. You get to do what you like, and can make suggestions and pull requests and load your own code.
 
 ## Button
 
