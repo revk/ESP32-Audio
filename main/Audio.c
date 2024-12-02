@@ -488,8 +488,9 @@ sd_task (void *arg)
                   uint64_t a = esp_timer_get_time ();
                   fwrite (micaudio[sdout], 1, micsamples * micchannels * micbytes, sdfile);
                   uint64_t b = esp_timer_get_time ();
-                  ESP_LOGE (TAG, "Wrote block %d, %ld bytes, %lldms", sdout, micsamples * micchannels * micbytes,
-                            (b - a) / 1000ULL);
+                  if ((b - a) / 1000ULL >= MICMS)
+                     ESP_LOGE (TAG, "Wrote block %d, %ld bytes, %lldms", sdout, micsamples * micchannels * micbytes,
+                               (b - a) / 1000ULL);
                   sdout = (sdout + 1) % MICQUEUE;
                }
             }
@@ -710,6 +711,7 @@ mic_task (void *arg)
          micchannels = (micstereo ? 2 : 1);
          micbytes = 2;
          micsamples = micfreq * MICMS / 1000;
+         led (micbeep ? 'R' : 'G');
       }
       for (int i = 0; i < MICQUEUE; i++)
          micaudio[i] = mallocspi (micchannels * micbytes * micsamples);
@@ -778,10 +780,7 @@ mic_task (void *arg)
       uint8_t beep = 0;
       uint8_t phase = 0;
       if (micbeep)
-      {
          beep = 1000 / MICMS + 1;
-         led ('R');
-      }
       ESP_LOGE (TAG, "Mic started mode %d, %ld*%d*%d bits at %ldHz - mapped to %d*%d bits", mode, micsamples, micchannels,
                 rawbytes * 8, micfreq, micchannels, micbytes * 8);
       while (!b.die && !(sip_mode <= SIP_REGISTERED && !b.micon))
@@ -812,7 +811,7 @@ mic_task (void *arg)
                *o++ = v;
             }
          }
-         switch (mic_mode)
+         switch (mode)
          {
          case MIC_SIP:
             if (sip_mode == SIP_IC || sip_mode == SIP_OG)
