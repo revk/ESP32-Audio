@@ -194,6 +194,7 @@ revk_web_extra (httpd_req_t * req, int page)
       revk_web_setting (req, NULL, "sdrectime");
       revk_web_setting (req, NULL, "sdupload");
       revk_web_setting (req, NULL, "sddelete");
+      revk_web_setting (req, NULL, "wifirecord");
       revk_web_setting (req, NULL, "wifilock");
    }
    if (vbus.set)
@@ -705,13 +706,14 @@ mic_task (void *arg)
          micchannels = 1;
          micbytes = 2;
          micsamples = SIP_BYTES;
-      } else
+      } else if(mode==MIC_RECORD)
       {
          micfreq = micrate;
          micchannels = (micstereo ? 2 : 1);
          micbytes = 2;
          micsamples = micfreq * MICMS / 1000;
          led (micbeep ? 'R' : 'G');
+	 if(wifirecord&&(!wifiusb||b.usb))revk_disable_wifi();
       }
       for (int i = 0; i < MICQUEUE; i++)
          micaudio[i] = mallocspi (micchannels * micbytes * micsamples);
@@ -858,6 +860,7 @@ mic_task (void *arg)
          free (micaudio[i]);
       i2s_del_channel (mic_handle);
       revk_enable_upgrade ();
+	 if(wifirecord&&(!wifiusb||b.usb))revk_enable_wifi();
       ESP_LOGE (TAG, "Mic stopped");
    }
    led ('K');
