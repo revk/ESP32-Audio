@@ -2,7 +2,7 @@
 
 († Open source)
 
-This project provides software and PCB designs for working with I2S microphone and speaker, most notably a self contacined battery opertated audio recorder to micro SD card.
+This project provides software and PCB designs for working with I2S microphone and speaker, most notably a self contained battery operated audio recorder to micro SD card.
 
 The software provides working for a number of different use cases.
 
