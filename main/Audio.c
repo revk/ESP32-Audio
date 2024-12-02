@@ -137,7 +137,6 @@ app_callback (int client, const char *prefix, const char *target, const char *su
 {
    if (client || !prefix || target || strcmp (prefix, topiccommand) || !suffix)
       return NULL;              // Not for us or not a command from main MQTTS
-   ESP_LOGE (TAG, "suffix %s", suffix);
    if (!strcasecmp (suffix, "morse"))
    {
       if (morsemessage)
@@ -170,7 +169,6 @@ app_callback (int client, const char *prefix, const char *target, const char *su
    }
    if (!strcasecmp (suffix, "record"))
    {
-      ESP_LOGE (TAG, "Type %d ON %d OFF %d", jo_here (j), jo_strcmp (j, "ON"), jo_strcmp (j, "OFF"));
       if (b.sdpresent && !jo_strcmp (j, "ON"))
          b.micon = 1;
       else
@@ -184,13 +182,13 @@ void
 send_ha_config (void)
 {
    b.ha = 0;
- ha_config_switch ("record", name: "Record", cmd: "/record", field: "record", delete:!haenable);
+ ha_config_switch ("record", name: "Record", cmd: "/record", field: "record", delete:(!haenable && !wifirecord));
 }
 
 void
 revk_state_extra (jo_t j)
 {
-   jo_bool (j, "record", b.micon);
+   jo_string (j, "record", b.micon ? "ON" : "OFF");
 }
 
 void
