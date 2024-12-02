@@ -3997,6 +3997,176 @@
 				)
 			)
 		)
+		(symbol "RevK:WS2812B-1mm"
+			(pin_names
+				(offset 0.254)
+			)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(property "Reference" "D"
+				(at 0 0 0)
+				(do_not_autoplace)
+				(effects
+					(font
+						(size 1 1)
+					)
+				)
+			)
+			(property "Value" "XL-1010RGBC-WS2812B"
+				(at 1.27 -5.715 0)
+				(effects
+					(font
+						(size 1 1)
+					)
+					(justify left top)
+					(hide yes)
+				)
+			)
+			(property "Footprint" ""
+				(at 1.27 -7.62 0)
+				(effects
+					(font
+						(size 1 1)
+					)
+					(justify left top)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" "https://datasheet.lcsc.com/lcsc/2301111010_XINGLIGHT-XL-1010RGBC-WS2812B_C5349953.pdf"
+				(at 1.27 -9.525 0)
+				(effects
+					(font
+						(size 1 1)
+					)
+					(justify left top)
+					(hide yes)
+				)
+			)
+			(property "Description" "RGB LED with integrated controller"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "LCSC Part #" "C5349953"
+				(at 1.27 -11.43 0)
+				(effects
+					(font
+						(size 1 1)
+					)
+					(justify left top)
+					(hide yes)
+				)
+			)
+			(property "ki_keywords" "RGB LED NeoPixel addressable"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_fp_filters" "LED*WS2812*PLCC*5.0x5.0mm*P3.2mm*"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "WS2812B-1mm_1_1"
+				(polyline
+					(pts
+						(xy 0 3.175) (xy 3.175 0) (xy 0 -3.175) (xy -3.175 0) (xy 0 3.175)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+				(pin output line
+					(at 3.81 0 180)
+					(length 0.5)
+					(name "O"
+						(effects
+							(font
+								(size 1 1)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1 1)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at 0 -3.81 90)
+					(length 0.5)
+					(name "+"
+						(effects
+							(font
+								(size 1 1)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1 1)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at 0 3.81 270)
+					(length 0.5)
+					(name "-"
+						(effects
+							(font
+								(size 1 1)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 1 1)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -3.81 0 0)
+					(length 0.5)
+					(name "I"
+						(effects
+							(font
+								(size 1 1)
+							)
+						)
+					)
+					(number "4"
+						(effects
+							(font
+								(size 1 1)
+							)
+						)
+					)
+				)
+			)
+		)
 		(symbol "Switch:SW_Push"
 			(pin_numbers hide)
 			(pin_names
@@ -4757,10 +4927,52 @@
 		(uuid "01212984-4bed-4b5c-b6e2-ab7794a05571")
 	)
 	(junction
+		(at 87.63 21.59)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "1ddcbf9f-5bd0-4cea-807e-39391d91a257")
+	)
+	(junction
+		(at 76.2 21.59)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "30050bf4-a644-45b4-8a92-bd40d670b8c5")
+	)
+	(junction
+		(at 87.63 29.21)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "340a784f-f73d-4462-8faf-33338ad8a4b0")
+	)
+	(junction
+		(at 64.77 21.59)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "38adaaf0-3b9b-4c7c-a6e9-9ea7f69c323c")
+	)
+	(junction
+		(at 93.345 29.21)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "425c7ebb-0958-4c36-9463-0dab5ed96268")
+	)
+	(junction
 		(at 236.22 131.445)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "4492bc87-2f43-4ce8-ba42-bbcb24409718")
+	)
+	(junction
+		(at 104.775 21.59)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "584a0058-35eb-4ab6-b788-7109d59bffda")
+	)
+	(junction
+		(at 99.06 21.59)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "59b3f794-4acf-4257-86c9-8931353963b5")
 	)
 	(junction
 		(at 202.565 109.855)
@@ -4769,10 +4981,46 @@
 		(uuid "5ba08c10-c173-4aaf-9b53-fd389b1173a0")
 	)
 	(junction
+		(at 64.77 29.21)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "679f7e9a-6961-4d17-958f-a8fe0a0de79a")
+	)
+	(junction
+		(at 59.055 29.21)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "724447cf-f8bc-4921-9987-142b39ac1d46")
+	)
+	(junction
+		(at 110.49 29.21)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "7ea8fa6a-d468-4547-b2c1-1e05b1c51799")
+	)
+	(junction
+		(at 110.49 21.59)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "7f563873-3ee8-4406-a84f-6917ab101151")
+	)
+	(junction
+		(at 99.06 29.21)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "827eb6c0-c298-4c45-a300-8ba6e7b6e102")
+	)
+	(junction
 		(at 177.8 109.855)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "877ba320-bb35-42af-af00-6255296ca4a7")
+	)
+	(junction
+		(at 70.485 29.21)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "8ac5d1a9-ba86-4388-96cc-b8aea3480849")
 	)
 	(junction
 		(at 247.65 131.445)
@@ -4805,16 +5053,46 @@
 		(uuid "b2584213-e648-4d42-a648-8ccd4580ebaf")
 	)
 	(junction
+		(at 76.2 29.21)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "b3202a0e-037f-469c-8b49-7b5e4cae6456")
+	)
+	(junction
+		(at 81.915 21.59)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "bf23f909-f274-4a49-a2c4-49ce5f17edea")
+	)
+	(junction
 		(at 184.15 112.395)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "cf3d7bfd-247d-428f-b913-e2bb22bf68cc")
 	)
 	(junction
+		(at 93.345 21.59)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "d0fa751a-72db-4116-9bcb-a8b45d91c66d")
+	)
+	(junction
 		(at 179.07 30.48)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "ddb741fd-40f8-467c-8fc1-430afbba3d7a")
+	)
+	(junction
+		(at 59.055 21.59)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "de569031-fa69-4c21-9d1d-cd29b4904b67")
+	)
+	(junction
+		(at 104.775 29.21)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "e1ba69cd-60b0-4bbb-835a-9448afc32887")
 	)
 	(junction
 		(at 236.22 118.11)
@@ -4827,6 +5105,12 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "e86114e3-4a44-4d52-9241-d581efc6521c")
+	)
+	(junction
+		(at 70.485 21.59)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "e9264804-7bde-41ec-aaf0-23805ce623a8")
 	)
 	(junction
 		(at 184.15 109.855)
@@ -4851,6 +5135,12 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "fa1e8fe6-8a7e-493a-8bed-79ecf07d0db3")
+	)
+	(junction
+		(at 81.915 29.21)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "fb201a38-238f-4c0b-ba85-2f84d914bbe4")
 	)
 	(no_connect
 		(at 66.04 71.12)
@@ -4879,6 +5169,10 @@
 	(no_connect
 		(at 66.04 99.06)
 		(uuid "41dc66bc-e434-4d39-9312-20f1ed5d11eb")
+	)
+	(no_connect
+		(at 114.3 25.4)
+		(uuid "4b7cfa58-c8f6-436e-ae58-a1a407ad65d5")
 	)
 	(no_connect
 		(at 35.56 73.66)
@@ -4915,10 +5209,6 @@
 	(no_connect
 		(at 66.04 81.28)
 		(uuid "9fe7cd63-ee6c-4d56-80a5-586d5c78456e")
-	)
-	(no_connect
-		(at 35.56 63.5)
-		(uuid "a5149caf-89c8-4aeb-b417-850c9e57110c")
 	)
 	(no_connect
 		(at 66.04 76.2)
@@ -4988,6 +5278,16 @@
 	)
 	(wire
 		(pts
+			(xy 76.2 21.59) (xy 81.915 21.59)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "0e80c726-94bd-470e-bb0c-74b476bfb046")
+	)
+	(wire
+		(pts
 			(xy 173.355 109.855) (xy 177.8 109.855)
 		)
 		(stroke
@@ -4995,6 +5295,16 @@
 			(type default)
 		)
 		(uuid "0ffdb7a7-e5e7-431b-afb4-1f34f852c1bb")
+	)
+	(wire
+		(pts
+			(xy 70.485 29.21) (xy 76.2 29.21)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "111a8059-974d-4faa-830b-0e5a744bdf26")
 	)
 	(wire
 		(pts
@@ -5048,6 +5358,66 @@
 	)
 	(wire
 		(pts
+			(xy 87.63 29.21) (xy 93.345 29.21)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "27d46386-daf0-40f4-81f6-8b9340f52226")
+	)
+	(wire
+		(pts
+			(xy 59.055 29.21) (xy 64.77 29.21)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "29375b86-6f03-4570-a43e-df62a6831667")
+	)
+	(wire
+		(pts
+			(xy 110.49 21.59) (xy 116.205 21.59)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2b12cd89-07c0-40e3-9280-b1f2ad6fa9c8")
+	)
+	(wire
+		(pts
+			(xy 91.44 25.4) (xy 95.25 25.4)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2e2b398d-6fc9-480f-ab63-8f356c9aa540")
+	)
+	(wire
+		(pts
+			(xy 57.15 25.4) (xy 60.96 25.4)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "32dea815-52c3-46d3-9fee-3676d66a53ac")
+	)
+	(wire
+		(pts
+			(xy 53.34 29.21) (xy 59.055 29.21)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "346ec25c-c890-4b56-b5fc-e4b80e2da96d")
+	)
+	(wire
+		(pts
 			(xy 236.22 149.225) (xy 260.35 149.225)
 		)
 		(stroke
@@ -5068,6 +5438,16 @@
 	)
 	(wire
 		(pts
+			(xy 87.63 21.59) (xy 93.345 21.59)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "43897b99-0378-4e00-955e-dfa8cf778c20")
+	)
+	(wire
+		(pts
 			(xy 173.355 117.475) (xy 168.275 117.475)
 		)
 		(stroke
@@ -5078,6 +5458,16 @@
 	)
 	(wire
 		(pts
+			(xy 76.2 29.21) (xy 81.915 29.21)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "4d362cc2-c91b-4f4c-a8fa-56ab212a37d6")
+	)
+	(wire
+		(pts
 			(xy 260.35 149.225) (xy 260.35 143.51)
 		)
 		(stroke
@@ -5085,6 +5475,16 @@
 			(type default)
 		)
 		(uuid "4f1fe937-7e33-4da1-beae-9bf26b506558")
+	)
+	(wire
+		(pts
+			(xy 93.345 29.21) (xy 99.06 29.21)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5421f73f-df44-411f-924e-8fb444581e4c")
 	)
 	(wire
 		(pts
@@ -5105,6 +5505,26 @@
 			(type default)
 		)
 		(uuid "584b15af-df32-4ffa-8a76-6417c2553847")
+	)
+	(wire
+		(pts
+			(xy 81.915 29.21) (xy 87.63 29.21)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5cc06552-8a04-4048-901c-78560f5a240d")
+	)
+	(wire
+		(pts
+			(xy 93.345 21.59) (xy 99.06 21.59)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "66aed893-fca8-40a8-b99c-504f27188392")
 	)
 	(wire
 		(pts
@@ -5138,6 +5558,26 @@
 	)
 	(wire
 		(pts
+			(xy 80.01 25.4) (xy 83.82 25.4)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "79d26a0a-0e35-42f6-9425-46c2d366825f")
+	)
+	(wire
+		(pts
+			(xy 70.485 21.59) (xy 76.2 21.59)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "7ab29405-545c-4991-9dde-530f704b636c")
+	)
+	(wire
+		(pts
 			(xy 236.22 100.33) (xy 260.35 100.33)
 		)
 		(stroke
@@ -5168,6 +5608,26 @@
 	)
 	(wire
 		(pts
+			(xy 53.34 21.59) (xy 59.055 21.59)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "869c81db-66af-4133-858f-26372eabc226")
+	)
+	(wire
+		(pts
+			(xy 104.775 29.21) (xy 110.49 29.21)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "8a8b5d7c-4578-42f7-9e35-342d046dd7e5")
+	)
+	(wire
+		(pts
 			(xy 240.03 36.83) (xy 234.95 36.83)
 		)
 		(stroke
@@ -5185,6 +5645,16 @@
 			(type default)
 		)
 		(uuid "8c7be9d4-826a-4766-9ca5-65958cf50ceb")
+	)
+	(wire
+		(pts
+			(xy 59.055 21.59) (xy 64.77 21.59)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "8cf954ea-2fcc-406e-bfac-02c60bf94bcf")
 	)
 	(wire
 		(pts
@@ -5225,6 +5695,26 @@
 			(type default)
 		)
 		(uuid "969cd739-7866-4507-879c-8a68be5e08b1")
+	)
+	(wire
+		(pts
+			(xy 64.77 29.21) (xy 70.485 29.21)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9bd2ed3b-f3b2-4aaa-b541-ddfa827b05d2")
+	)
+	(wire
+		(pts
+			(xy 68.58 25.4) (xy 72.39 25.4)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a9529a1d-ecc1-4251-9de3-08c6be83df42")
 	)
 	(wire
 		(pts
@@ -5338,6 +5828,46 @@
 	)
 	(wire
 		(pts
+			(xy 99.06 29.21) (xy 104.775 29.21)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "cdb9dbc7-d19b-4586-933f-62e0b0a02cc3")
+	)
+	(wire
+		(pts
+			(xy 81.915 21.59) (xy 87.63 21.59)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d60f7ad6-a945-4ba2-9a97-b31c3af93c2e")
+	)
+	(wire
+		(pts
+			(xy 110.49 29.21) (xy 116.205 29.21)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "daa70fa0-5d72-44e6-a955-d83fa65acb91")
+	)
+	(wire
+		(pts
+			(xy 64.77 21.59) (xy 70.485 21.59)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "dda23336-6a1a-493c-90fb-fab1a14c04cb")
+	)
+	(wire
+		(pts
 			(xy 168.91 30.48) (xy 168.91 34.29)
 		)
 		(stroke
@@ -5358,6 +5888,16 @@
 	)
 	(wire
 		(pts
+			(xy 99.06 21.59) (xy 104.775 21.59)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "eb1eca46-5995-4fdd-b50e-8326337e2d73")
+	)
+	(wire
+		(pts
 			(xy 129.54 140.97) (xy 129.54 146.05)
 		)
 		(stroke
@@ -5368,6 +5908,16 @@
 	)
 	(wire
 		(pts
+			(xy 102.87 25.4) (xy 106.68 25.4)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ed95c692-fe38-4d6d-b9b3-e310ae6bda9b")
+	)
+	(wire
+		(pts
 			(xy 66.04 104.775) (xy 80.01 104.775)
 		)
 		(stroke
@@ -5375,6 +5925,16 @@
 			(type default)
 		)
 		(uuid "ef943a76-af0c-46ce-8e6e-ca013ff94a3d")
+	)
+	(wire
+		(pts
+			(xy 104.775 21.59) (xy 110.49 21.59)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f2789c23-8bf2-47d3-a20a-a309f1b3336a")
 	)
 	(global_label "CHARGING"
 		(shape output)
@@ -5684,6 +6244,28 @@
 			)
 		)
 	)
+	(global_label "RGB"
+		(shape output)
+		(at 35.56 63.5 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "67a7c84e-b4dc-4466-9817-bd25dd5cbf29")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 29.419 63.5 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+				(hide yes)
+			)
+		)
+	)
 	(global_label "D-"
 		(shape bidirectional)
 		(at 264.795 35.56 0)
@@ -5724,6 +6306,28 @@
 					(size 1.27 1.27)
 				)
 				(justify left)
+				(hide yes)
+			)
+		)
+	)
+	(global_label "RGB"
+		(shape input)
+		(at 49.53 25.4 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "8a852b5d-f186-41dc-aa59-649b88fb4d19")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 43.389 25.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
 				(hide yes)
 			)
 		)
@@ -6433,6 +7037,76 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:C")
+		(at 104.775 25.4 0)
+		(mirror y)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "028cf239-64df-40c7-bcfc-39eeed3b518e")
+		(property "Reference" "C18"
+			(at 103.378 20.066 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Value" "100nF"
+			(at 101.6 31.242 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" "RevK:C_0402"
+			(at 103.8098 29.21 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 104.775 25.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 104.775 25.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "32ed98ca-8c09-495b-80bb-2c9d7c36a454")
+		)
+		(pin "2"
+			(uuid "52bc360b-d406-4aea-96f0-39b7a0c368b7")
+		)
+		(instances
+			(project "CommBadge"
+				(path "/46c350bb-7de4-4e81-aafd-4af55e37aab0"
+					(reference "C18")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:GND")
 		(at 191.77 120.015 0)
 		(unit 1)
@@ -6492,6 +7166,95 @@
 			(project "CommBadge"
 				(path "/46c350bb-7de4-4e81-aafd-4af55e37aab0"
 					(reference "#PWR015")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "RevK:WS2812B-1mm")
+		(at 53.34 25.4 0)
+		(mirror x)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "0d03aa03-e1c5-4589-a322-bed2ffeedfa2")
+		(property "Reference" "D4"
+			(at 53.34 25.4 0)
+			(do_not_autoplace yes)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Value" "XL-1010RGBC-WS2812B"
+			(at 54.61 19.685 0)
+			(effects
+				(font
+					(size 1 1)
+				)
+				(justify left top)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "RevK:SMD1010"
+			(at 54.61 17.78 0)
+			(effects
+				(font
+					(size 1 1)
+				)
+				(justify left top)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "https://datasheet.lcsc.com/lcsc/2301111010_XINGLIGHT-XL-1010RGBC-WS2812B_C5349953.pdf"
+			(at 54.61 15.875 0)
+			(effects
+				(font
+					(size 1 1)
+				)
+				(justify left top)
+				(hide yes)
+			)
+		)
+		(property "Description" "RGB LED with integrated controller"
+			(at 53.34 25.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C5349953"
+			(at 54.61 13.97 0)
+			(effects
+				(font
+					(size 1 1)
+				)
+				(justify left top)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "d0f14ad5-2d34-4321-93d8-af8f300260c0")
+		)
+		(pin "2"
+			(uuid "6b3be63c-4afd-4442-ba6f-50f91db6ea2c")
+		)
+		(pin "3"
+			(uuid "e06bf1bb-6c02-4a8e-ae3a-996d8c2e95be")
+		)
+		(pin "4"
+			(uuid "5b7f227d-a031-43db-8583-3480e6df9d20")
+		)
+		(instances
+			(project "CommBadge"
+				(path "/46c350bb-7de4-4e81-aafd-4af55e37aab0"
+					(reference "D4")
 					(unit 1)
 				)
 			)
@@ -6558,6 +7321,95 @@
 			(project "CommBadge"
 				(path "/46c350bb-7de4-4e81-aafd-4af55e37aab0"
 					(reference "#PWR038")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "RevK:WS2812B-1mm")
+		(at 76.2 25.4 0)
+		(mirror x)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "126f471c-d6d2-4351-aa39-025bcfe2ade7")
+		(property "Reference" "D6"
+			(at 76.2 25.4 0)
+			(do_not_autoplace yes)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Value" "XL-1010RGBC-WS2812B"
+			(at 77.47 19.685 0)
+			(effects
+				(font
+					(size 1 1)
+				)
+				(justify left top)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "RevK:SMD1010"
+			(at 77.47 17.78 0)
+			(effects
+				(font
+					(size 1 1)
+				)
+				(justify left top)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "https://datasheet.lcsc.com/lcsc/2301111010_XINGLIGHT-XL-1010RGBC-WS2812B_C5349953.pdf"
+			(at 77.47 15.875 0)
+			(effects
+				(font
+					(size 1 1)
+				)
+				(justify left top)
+				(hide yes)
+			)
+		)
+		(property "Description" "RGB LED with integrated controller"
+			(at 76.2 25.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C5349953"
+			(at 77.47 13.97 0)
+			(effects
+				(font
+					(size 1 1)
+				)
+				(justify left top)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "89dd76f4-c6d9-47e3-83a8-2ad264bfb223")
+		)
+		(pin "2"
+			(uuid "c7fb243c-c9ed-428e-9cb3-3b01f611384f")
+		)
+		(pin "3"
+			(uuid "98e3bc20-02b2-44fd-a15c-b4d20d8c51c0")
+		)
+		(pin "4"
+			(uuid "96b41854-264c-412b-99b9-345b78216875")
+		)
+		(instances
+			(project "CommBadge"
+				(path "/46c350bb-7de4-4e81-aafd-4af55e37aab0"
+					(reference "D6")
 					(unit 1)
 				)
 			)
@@ -8649,6 +9501,76 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:C")
+		(at 59.055 25.4 0)
+		(mirror y)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "6609a948-cf8a-4c37-b13b-9ecf56352a4a")
+		(property "Reference" "C12"
+			(at 57.658 20.066 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Value" "100nF"
+			(at 55.88 31.242 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" "RevK:C_0402"
+			(at 58.0898 29.21 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 59.055 25.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 59.055 25.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "7dc95a65-82cb-4db1-8f90-94d2f121d9f8")
+		)
+		(pin "2"
+			(uuid "bb89c64d-fe79-49e0-b802-075094e272e5")
+		)
+		(instances
+			(project "CommBadge"
+				(path "/46c350bb-7de4-4e81-aafd-4af55e37aab0"
+					(reference "C12")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:GND")
 		(at 78.74 144.78 0)
 		(unit 1)
@@ -8775,6 +9697,76 @@
 			(project "LED"
 				(path "/46c350bb-7de4-4e81-aafd-4af55e37aab0"
 					(reference "#PWR017")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:C")
+		(at 93.345 25.4 0)
+		(mirror y)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "6c900d41-dbf6-4f53-b3c6-a345a5418e63")
+		(property "Reference" "C17"
+			(at 91.948 20.066 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Value" "100nF"
+			(at 90.17 31.242 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" "RevK:C_0402"
+			(at 92.3798 29.21 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 93.345 25.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 93.345 25.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "a3b247b2-139f-4766-89a1-d1abe78e6850")
+		)
+		(pin "2"
+			(uuid "095f1aee-e933-4d02-a85a-c42b2e93cc33")
+		)
+		(instances
+			(project "CommBadge"
+				(path "/46c350bb-7de4-4e81-aafd-4af55e37aab0"
+					(reference "C17")
 					(unit 1)
 				)
 			)
@@ -9202,6 +10194,76 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:C")
+		(at 81.915 25.4 0)
+		(mirror y)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "8ff7269a-243c-4bff-bef8-d94e5dcbb087")
+		(property "Reference" "C16"
+			(at 80.518 20.066 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Value" "100nF"
+			(at 78.74 31.242 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" "RevK:C_0402"
+			(at 80.9498 29.21 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 81.915 25.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 81.915 25.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "fbdd89a8-afb1-427d-9670-e256ac49a5b0")
+		)
+		(pin "2"
+			(uuid "07dc2e8d-96a9-4069-b4a0-c0feb1af73d9")
+		)
+		(instances
+			(project "CommBadge"
+				(path "/46c350bb-7de4-4e81-aafd-4af55e37aab0"
+					(reference "C16")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:GND")
 		(at 236.22 149.225 0)
 		(unit 1)
@@ -9537,6 +10599,76 @@
 			(project "LED"
 				(path "/46c350bb-7de4-4e81-aafd-4af55e37aab0"
 					(reference "C1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:C")
+		(at 116.205 25.4 0)
+		(mirror y)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "9dd21ce8-d6f1-419b-928d-f148d5fb05be")
+		(property "Reference" "C11"
+			(at 114.808 20.066 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Value" "100nF"
+			(at 113.03 31.242 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" "RevK:C_0402"
+			(at 115.2398 29.21 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 116.205 25.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 116.205 25.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "5189a7e4-12b4-41cd-a717-64f3a07f8a77")
+		)
+		(pin "2"
+			(uuid "288166af-73dd-46cb-864a-f0aad9cf1037")
+		)
+		(instances
+			(project "CommBadge"
+				(path "/46c350bb-7de4-4e81-aafd-4af55e37aab0"
+					(reference "C11")
 					(unit 1)
 				)
 			)
@@ -9991,6 +11123,184 @@
 			(project "Reference"
 				(path "/825c70b0-4860-42b7-97dc-86bfa46e06fd"
 					(reference "R7")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "RevK:WS2812B-1mm")
+		(at 87.63 25.4 0)
+		(mirror x)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "b77e8ab3-ec75-4840-9eb3-86dc68026595")
+		(property "Reference" "D7"
+			(at 87.63 25.4 0)
+			(do_not_autoplace yes)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Value" "XL-1010RGBC-WS2812B"
+			(at 88.9 19.685 0)
+			(effects
+				(font
+					(size 1 1)
+				)
+				(justify left top)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "RevK:SMD1010"
+			(at 88.9 17.78 0)
+			(effects
+				(font
+					(size 1 1)
+				)
+				(justify left top)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "https://datasheet.lcsc.com/lcsc/2301111010_XINGLIGHT-XL-1010RGBC-WS2812B_C5349953.pdf"
+			(at 88.9 15.875 0)
+			(effects
+				(font
+					(size 1 1)
+				)
+				(justify left top)
+				(hide yes)
+			)
+		)
+		(property "Description" "RGB LED with integrated controller"
+			(at 87.63 25.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C5349953"
+			(at 88.9 13.97 0)
+			(effects
+				(font
+					(size 1 1)
+				)
+				(justify left top)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "e1f0ade1-8a6f-41bb-a88a-bf24ac47dd67")
+		)
+		(pin "2"
+			(uuid "534a9428-3c8f-4d05-b317-70a3df189b3a")
+		)
+		(pin "3"
+			(uuid "3418254a-2ee7-4d97-a46b-5d551fb25bd0")
+		)
+		(pin "4"
+			(uuid "2cd6e268-7b5f-481f-be46-7261ee5bdd23")
+		)
+		(instances
+			(project "CommBadge"
+				(path "/46c350bb-7de4-4e81-aafd-4af55e37aab0"
+					(reference "D7")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "RevK:WS2812B-1mm")
+		(at 64.77 25.4 0)
+		(mirror x)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "b806e77e-3f0c-471f-aa74-3fdadcc86c2b")
+		(property "Reference" "D5"
+			(at 64.77 25.4 0)
+			(do_not_autoplace yes)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Value" "XL-1010RGBC-WS2812B"
+			(at 66.04 19.685 0)
+			(effects
+				(font
+					(size 1 1)
+				)
+				(justify left top)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "RevK:SMD1010"
+			(at 66.04 17.78 0)
+			(effects
+				(font
+					(size 1 1)
+				)
+				(justify left top)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "https://datasheet.lcsc.com/lcsc/2301111010_XINGLIGHT-XL-1010RGBC-WS2812B_C5349953.pdf"
+			(at 66.04 15.875 0)
+			(effects
+				(font
+					(size 1 1)
+				)
+				(justify left top)
+				(hide yes)
+			)
+		)
+		(property "Description" "RGB LED with integrated controller"
+			(at 64.77 25.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C5349953"
+			(at 66.04 13.97 0)
+			(effects
+				(font
+					(size 1 1)
+				)
+				(justify left top)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "b646fb1c-6bae-4707-98aa-351d7e388be0")
+		)
+		(pin "2"
+			(uuid "c34b6516-85e8-4614-8988-d1ca595a685a")
+		)
+		(pin "3"
+			(uuid "771ba809-e8cb-460f-969b-e1d9fc972e63")
+		)
+		(pin "4"
+			(uuid "4863add9-9f82-49ca-8f91-24160112e804")
+		)
+		(instances
+			(project "CommBadge"
+				(path "/46c350bb-7de4-4e81-aafd-4af55e37aab0"
+					(reference "D5")
 					(unit 1)
 				)
 			)
@@ -10736,6 +12046,95 @@
 		)
 	)
 	(symbol
+		(lib_id "RevK:WS2812B-1mm")
+		(at 99.06 25.4 0)
+		(mirror x)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "e5031f10-398f-493d-98d4-af165f13aadb")
+		(property "Reference" "D8"
+			(at 99.06 25.4 0)
+			(do_not_autoplace yes)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Value" "XL-1010RGBC-WS2812B"
+			(at 100.33 19.685 0)
+			(effects
+				(font
+					(size 1 1)
+				)
+				(justify left top)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "RevK:SMD1010"
+			(at 100.33 17.78 0)
+			(effects
+				(font
+					(size 1 1)
+				)
+				(justify left top)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "https://datasheet.lcsc.com/lcsc/2301111010_XINGLIGHT-XL-1010RGBC-WS2812B_C5349953.pdf"
+			(at 100.33 15.875 0)
+			(effects
+				(font
+					(size 1 1)
+				)
+				(justify left top)
+				(hide yes)
+			)
+		)
+		(property "Description" "RGB LED with integrated controller"
+			(at 99.06 25.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C5349953"
+			(at 100.33 13.97 0)
+			(effects
+				(font
+					(size 1 1)
+				)
+				(justify left top)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "d1f0d017-4a73-4cab-ad0c-185bd5885d78")
+		)
+		(pin "2"
+			(uuid "c4868ca7-f93f-4c59-a5aa-7036aa08263f")
+		)
+		(pin "3"
+			(uuid "746ea1d3-5b88-4c6c-be68-bc7a65102260")
+		)
+		(pin "4"
+			(uuid "b9203e16-8805-452f-9268-530849d49661")
+		)
+		(instances
+			(project "CommBadge"
+				(path "/46c350bb-7de4-4e81-aafd-4af55e37aab0"
+					(reference "D8")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:+3.3V")
 		(at 167.64 60.96 0)
 		(unit 1)
@@ -10868,6 +12267,95 @@
 		)
 	)
 	(symbol
+		(lib_id "RevK:WS2812B-1mm")
+		(at 110.49 25.4 0)
+		(mirror x)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "e8f27c82-21e2-45e7-a929-72e335816e2c")
+		(property "Reference" "D9"
+			(at 110.49 25.4 0)
+			(do_not_autoplace yes)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Value" "XL-1010RGBC-WS2812B"
+			(at 111.76 19.685 0)
+			(effects
+				(font
+					(size 1 1)
+				)
+				(justify left top)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "RevK:SMD1010"
+			(at 111.76 17.78 0)
+			(effects
+				(font
+					(size 1 1)
+				)
+				(justify left top)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "https://datasheet.lcsc.com/lcsc/2301111010_XINGLIGHT-XL-1010RGBC-WS2812B_C5349953.pdf"
+			(at 111.76 15.875 0)
+			(effects
+				(font
+					(size 1 1)
+				)
+				(justify left top)
+				(hide yes)
+			)
+		)
+		(property "Description" "RGB LED with integrated controller"
+			(at 110.49 25.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C5349953"
+			(at 111.76 13.97 0)
+			(effects
+				(font
+					(size 1 1)
+				)
+				(justify left top)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "0a533acf-81ae-4059-8ff8-8843ac89d19a")
+		)
+		(pin "2"
+			(uuid "6c0b83c0-b9d0-4c72-8629-73bd7027a6ce")
+		)
+		(pin "3"
+			(uuid "7d818758-7db0-478f-90a4-d2743da4c13b")
+		)
+		(pin "4"
+			(uuid "73c0bbf7-73ea-470a-b796-a13f7946687d")
+		)
+		(instances
+			(project "CommBadge"
+				(path "/46c350bb-7de4-4e81-aafd-4af55e37aab0"
+					(reference "D9")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:GND")
 		(at 44.45 144.78 0)
 		(unit 1)
@@ -10928,6 +12416,76 @@
 			(project "LED"
 				(path "/46c350bb-7de4-4e81-aafd-4af55e37aab0"
 					(reference "#PWR016")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:C")
+		(at 70.485 25.4 0)
+		(mirror y)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "ea660460-4de2-41c8-9668-e6a0e39500be")
+		(property "Reference" "C15"
+			(at 69.088 20.066 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Value" "100nF"
+			(at 67.31 31.242 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" "RevK:C_0402"
+			(at 69.5198 29.21 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 70.485 25.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 70.485 25.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "8f6eb441-be96-4335-bbbf-ce09916bfd7e")
+		)
+		(pin "2"
+			(uuid "3e214dac-83be-428b-b52f-4a60d42d7c46")
+		)
+		(instances
+			(project "CommBadge"
+				(path "/46c350bb-7de4-4e81-aafd-4af55e37aab0"
+					(reference "C15")
 					(unit 1)
 				)
 			)
