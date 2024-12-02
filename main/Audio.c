@@ -162,7 +162,7 @@ app_callback (int client, const char *prefix, const char *target, const char *su
       b.doformat = 1;
       return NULL;
    }
-   if (!strcasecmp (suffix, "connect"))
+   if (suffix && ((haenable && (!strcmp (suffix, "connect") || !strcmp (suffix, "status"))) || !strcmp (suffix, "setting")))
    {
       b.ha = 1;
       return NULL;
@@ -174,7 +174,7 @@ void
 send_ha_config (void)
 {
    b.ha = 0;
-   // TODO
+ ha_config_switch ("record", name: "Record", delete:!haenable);
 }
 
 void
@@ -194,6 +194,7 @@ revk_web_extra (httpd_req_t * req, int page)
       revk_web_setting (req, NULL, "sdrectime");
       revk_web_setting (req, NULL, "sdupload");
       revk_web_setting (req, NULL, "sddelete");
+      revk_web_setting (req, NULL, "haenable");
       revk_web_setting (req, NULL, "wifirecord");
       revk_web_setting (req, NULL, "wifilock");
    }
@@ -706,14 +707,15 @@ mic_task (void *arg)
          micchannels = 1;
          micbytes = 2;
          micsamples = SIP_BYTES;
-      } else if(mode==MIC_RECORD)
+      } else if (mode == MIC_RECORD)
       {
          micfreq = micrate;
          micchannels = (micstereo ? 2 : 1);
          micbytes = 2;
          micsamples = micfreq * MICMS / 1000;
          led (micbeep ? 'R' : 'G');
-	 if(wifirecord&&(!wifiusb||b.usb))revk_disable_wifi();
+         if (wifirecord && (!wifiusb || b.usb))
+            revk_disable_wifi ();
       }
       for (int i = 0; i < MICQUEUE; i++)
          micaudio[i] = mallocspi (micchannels * micbytes * micsamples);
@@ -860,7 +862,8 @@ mic_task (void *arg)
          free (micaudio[i]);
       i2s_del_channel (mic_handle);
       revk_enable_upgrade ();
-	 if(wifirecord&&(!wifiusb||b.usb))revk_enable_wifi();
+      if (wifirecord && (!wifiusb || b.usb))
+         revk_enable_wifi ();
       ESP_LOGE (TAG, "Mic stopped");
    }
    led ('K');
