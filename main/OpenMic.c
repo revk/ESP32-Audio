@@ -6,6 +6,7 @@ static const char TAG[] = "OpenMic";
 #include "revk.h"
 #include "esp_sleep.h"
 #include "esp_task_wdt.h"
+#include <netdb.h>
 #include <driver/gpio.h>
 #include <driver/uart.h>
 #include <driver/i2c.h>
@@ -238,6 +239,8 @@ revk_web_extra (httpd_req_t * req, int page)
       revk_web_setting (req, NULL, "siphost");
       revk_web_setting (req, NULL, "sipuser");
       revk_web_setting (req, NULL, "sippass");
+      revk_web_setting (req, NULL, "sipoutgoing");
+      revk_web_setting (req, NULL, "sipdebug");
    }
    if (spklrc.set)
    {
@@ -1194,6 +1197,7 @@ spk_task (void *arg)
 void
 sip_debug (uint8_t rx, struct sockaddr_storage *addr, const char *message)
 {
+   ESP_LOG_BUFFER_HEX_LEVEL (rx ? "Rx" : "Tx", addr, sizeof (*addr), ESP_LOG_ERROR);
    ESP_LOGE (rx ? "Rx" : "Tx", "%s", message);
    // TODO log to MQTT
 }
@@ -1308,7 +1312,7 @@ app_main ()
       {                         // Pressed
          if (press < 255)
             press++;
-         if (press == 10 && SIP_IC_ALERT)
+         if (press == 10 && sip_mode == SIP_IC_ALERT)
             sip_hangup ();
          if (press == 30)
             b.die = 1;
