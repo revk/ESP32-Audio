@@ -1,7 +1,7 @@
-/* Audio app */
+/* OpenMic app */
 /* Copyright ©2024 Adrian Kennard, Andrews & Arnold Ltd.See LICENCE file for details .GPL 3.0 */
 
-static const char TAG[] = "Audio";
+static const char TAG[] = "OpenMic";
 
 #include "revk.h"
 #include "esp_sleep.h"
@@ -252,7 +252,7 @@ web_root (httpd_req_t * req)
 {
    if (revk_link_down ())
       return revk_web_settings (req);   // Direct to web set up
-   revk_web_head (req, "Audio");
+   revk_web_head (req, "OpenMic");
    revk_web_send (req, "<h1>%s</h1>", *hostname ? hostname : appname);
    if (wifilock && b.sdpresent)
       revk_web_send (req, "<p>For security reasons, settings are disabled whilst the SD card is inserted</p>");
@@ -363,7 +363,7 @@ sd_task (void *arg)
       ESP_LOGI (TAG, "Filesystem mounted");
       b.sdpresent = 1;          // we mounted, so must be
       rgbsd = 'G';              // Writing to card
-      if (b.doformat && (e = esp_vfs_fat_spiflash_format_rw_wl (sd_mount, "Audio")))
+      if (b.doformat && (e = esp_vfs_fat_spiflash_format_rw_wl (sd_mount, "OpenMic")))
       {
          jo_t j = jo_object_alloc ();
          jo_string (j, "error", cardstatus = "Failed to format");

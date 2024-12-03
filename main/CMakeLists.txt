@@ -1,4 +1,4 @@
-set (COMPONENT_SRCS "Audio.c" "fft.c" "../settings.c")
+set (COMPONENT_SRCS "OpenMic.c" "fft.c" "../settings.c")
 set (COMPONENT_REQUIRES "ESP32-RevK" "ESP32-SIP" "fatfs" "sdmmc" "driver" "led_strip")
 
 

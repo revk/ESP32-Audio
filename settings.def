@@ -41,6 +41,7 @@ u8	dtmf.gap	0.100	.unit="s",.live=1,.decimal=3		// DTMF Gap time
 s	sip.host		.hide=1	// SIP server hostname
 s	sip.user		.hide=1	// SIP registration username
 s	sip.pass		.hide=1	// SIP registration password
+s	sip.outgoing		.hide=1	// SIP target or number for outgoing call
 bit	sip.debug		.live=1	// SIP debug messages to MQTT
 
 bit	wifi.lock	1	.hide=1	// Lock down settings/AP mode when SD card inserted

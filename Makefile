@@ -3,7 +3,7 @@
 # project subdirectory.
 #
 
-PROJECT_NAME := Audio
+PROJECT_NAME := OpenMic
 SUFFIX := $(shell components/ESP32-RevK/buildsuffix)
 export SUFFIX
 
@@ -21,7 +21,7 @@ beta:
 	-git submodule update --recursive
 	-git commit -a
 	@make set
-	cp Audio*.bin betarelease
+	cp ${PROJECT_NAME}*.bin betarelease
 	git commit -a -m betarelease
 	git push
 
@@ -30,8 +30,8 @@ issue:
 	-git submodule update --recursive
 	-git commit -a
 	@make set
-	cp Audio*.bin release
-	cp Audio*.bin betarelease
+	cp ${PROJECT_NAME}*.bin release
+	cp ${PROJECT_NAME}*.bin betarelease
 	git commit -a -m release
 	git push
 
@@ -41,7 +41,7 @@ image:
 	#esptool.py -b 460800 read_flash --flash_size 4MB 0 0x400000 s3.bin
 	esptool.py -b 460800 read_flash --flash_size 4MB 0 0x200000 s3.bin
 
-set:	solo wroom pico s3
+set:	s3
 
 settings.h:     components/ESP32-RevK/revk_settings settings.def components/ESP32-RevK/settings.def
 	components/ESP32-RevK/revk_settings $^

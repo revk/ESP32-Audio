@@ -24,7 +24,7 @@ set(EXTRA_COMPONENT_DIRS
     "${ESP_MATTER_PATH}/components"
     ${extra_components_dirs_append})
 
-project(Audio)
+project(OpenMic)
 
 if(CONFIG_ENABLE_ENCRYPTED_OTA)
     target_add_binary_data(light.elf "secure_boot_signing_key.pem" TEXT)
@@ -42,7 +42,7 @@ idf_build_set_property(COMPILE_OPTIONS "-Wno-format-nonliteral;-Wno-format-secur
 
 else ()
 
-project(Audio)
+project(OpenMic)
 
 endif()
 
