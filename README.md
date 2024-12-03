@@ -56,7 +56,7 @@ When `micgain` is not `0`, for ICS-43434, the 24 bit samples are processed by mu
 
 The output via the speaker can be one of the following - normally managed via MQTT control messages or web interface, though SIP is automatic when a call arrives.
 
-* Morse code
+* Morse code (including prosigns in `[]`, e.g. `[INT]`) and punctuation
 * DTMF
 * Playing a WAV file from SD card (TODO)
 * SIP (see below)

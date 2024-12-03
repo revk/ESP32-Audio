@@ -66,7 +66,26 @@ struct
    {'8', "---.."},
    {'9', "----."},
    {'0', "-----"},
+   {'.', ".-.-.-"},
+   {',', "--..--"},
+   {'?', "..--.."},
+   {'\'', ".---."},
+   {'/', "-..-."},
+   {'(', "-.--."},
+   {')', "-.--.-"},
+   {'&', ".-..."},
+   {':', "---..."},
+   {';', "-.-.-."},
+   {'=', "-...-"},
+   {'+', ".-.-."},
+   {'-', "-....-"},
+   {'+', "..--.-"},
+   {'"', ".-..-."},
+   {'$', "...-..-"},
+   {'@', ".--.-."},
 };
+
+// TODO international characters
 
 char *morsemessage = NULL;      // Malloc'd
 char *tones = NULL;             // Malloc'd
@@ -892,6 +911,7 @@ spk_task (void *arg)
       morsemessage = strdup (morsestart);
    while (!b.die)
    {
+      uint8_t morseprosign = 0;
       const char *morsep = NULL;
       const char *tonep = NULL;
       spk_mode_t mode = SPK_IDLE;
@@ -965,16 +985,16 @@ spk_task (void *arg)
       spk_mode = mode;
       ESP_LOGE (TAG, "Spk started mode %d, %ld*%d*%d bits at %ldHz", mode, spksamples, spkchannels, spkbytes * 8, spkfreq);
       audio_t *samples = mallocspi (spkchannels * spkbytes * spksamples);
-      uint32_t on = 1,
+      uint16_t on = 1,
          off = 0,
-         phase1 = 0,
-         phase2 = 0,
-         freq1 = 0,
-         freq2 = 0,
          morseu = 0,            // Timings for morse
          morsef = 0,
          dtmfu = 0,             // Timings for DTMF
          dtmfg = 0;
+      uint32_t phase1 = 0,
+         phase2 = 0,
+         freq1 = 0,
+         freq2 = 0;
       uint32_t level1 = 0,
          level2 = 0;
       int32_t tablesin (uint32_t p)
@@ -1000,6 +1020,8 @@ spk_task (void *arg)
             tonep = tones;      // New tones
          morseu = 60 * spkfreq / morsewpm / 50;
          morsef = (60 * spkfreq / morsefwpm - 31 * morseu) / 19;
+         if (morsef < morseu)
+            morsef = morseu;
          dtmfu = dtmftone * spkfreq / 1000;
          dtmfg = dtmfgap * spkfreq / 1000;
       }
@@ -1040,8 +1062,16 @@ spk_task (void *arg)
                      tones = NULL;
                      if (morsep)
                      {          // More morse
+                        if (!morseprosign)
+                           off = morsef * 3 - morseu;   // Character gap (we did morseu already)
+                        while (*morsep == '[')
+                        {
+                           morseprosign = 1;
+                           morsep++;
+                        }
                         if (!*morsep)
                         {       // End of morse
+                           morseprosign = 0;
                            morsep = NULL;
                            free (morsemessage);
                            morsemessage = NULL;
@@ -1049,6 +1079,11 @@ spk_task (void *arg)
                            continue;
                         }
                         char c = toupper ((int) *morsep++);
+                        while (*morsep == ']')
+                        {
+                           morseprosign = 0;
+                           morsep++;
+                        }
                         for (int i = 0; i < sizeof (morse) / sizeof (*morse); i++)
                            if (morse[i].c == c)
                            {
@@ -1060,8 +1095,8 @@ spk_task (void *arg)
                            off = morsef * 7 - morseu;   // Word gap
                            continue;
                         }
-                        off = morsef * 3 - morseu;      // inter character
-                        continue;
+                        if (off)
+                           continue;
                      }
                   }
                   if (!tones)
