@@ -20,8 +20,9 @@ Button works with short or long press (long is 3s).
 
 * press to answer or end incoming SIP call
 * press to start or stop recording
-* hold to reject incoming SIP call
-* hold to enter power off more, press to restart (will upload files at this point if option selected)
+* hold (1s) to reject incoming SIP call
+* hold (1s) to make a call
+* hold (3s) to enter power off more, press to restart (will upload files at this point if option selected)
 
 ## Microphone
 

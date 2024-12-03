@@ -1308,13 +1308,10 @@ app_main ()
       {                         // Pressed
          if (press < 255)
             press++;
+         if (press == 10 && SIP_IC_ALERT)
+            sip_hangup ();
          if (press == 30)
-         {                      // Long press
-            if (sip_mode == SIP_IC_ALERT)
-               sip_hangup ();
-            else
-               b.die = 1;
-         }
+            b.die = 1;
       } else if (press)
       {                         // Released
          if (press < 30)
@@ -1323,6 +1320,8 @@ app_main ()
                sip_answer ();
             else if (sip_mode == SIP_IC || sip_mode == SIP_OG || sip_mode == SIP_OG_ALERT)
                sip_hangup ();
+            else if (press >= 10 && *sipoutgoing)
+               sip_call (NULL, sipoutgoing, strchr (sipoutgoing, '@') ? NULL : siphost, sipuser, sippass);
             else if (!b.micon && !b.sdpresent)
                ESP_LOGE (TAG, "No card");
             else
