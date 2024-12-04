@@ -42,7 +42,7 @@ s	sip.host		.hide=1	// SIP server hostname
 s	sip.user		.hide=1	// SIP registration username
 s	sip.pass		.hide=1	// SIP registration password
 s	sip.outgoing		.hide=1	// SIP target or number for outgoing call
-bit	sip.debug		.live=1	// SIP debug messages to serial log
+bit	sip.debug			// SIP debug messages to serial log
 
 bit	wifi.lock	1	.hide=1	// Lock down settings/AP mode when SD card inserted
 bit	wifi.usb		.hide=1	// Only have wifi when on USB power

@@ -240,7 +240,6 @@ revk_web_extra (httpd_req_t * req, int page)
       revk_web_setting (req, NULL, "sipuser");
       revk_web_setting (req, NULL, "sippass");
       revk_web_setting (req, NULL, "sipoutgoing");
-      revk_web_setting (req, NULL, "sipdebug");
    }
    if (spklrc.set)
    {
