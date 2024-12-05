@@ -6,7 +6,7 @@ gpio	spk.data			// Speaker Data
 gpio	mic.data	1		// Microphone Data / SD
 gpio	mic.clock	11		// Microphone Clock / SCK
 gpio	mic.ws		0		// Microphone WS (not set for PDM)
-u32	mic.rate	44100 .unit="Hz",.live=1	// Microphone Input rate
+u32	mic.rate	44100 .unit="Hz",.live=1	// Microphone Input rate (when not SIP)
 u8	mic.gain	4	.live=1		// Microphone Multiply input (set 0 for 24 bit raw)
 bit	mic.stereo	1	.live=1		// Microphone Stereo
 bit	mic.right		.live=1		// Microphone use right channel

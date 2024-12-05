@@ -258,6 +258,17 @@ register_uri (const httpd_uri_t * uri_struct)
 }
 
 static void
+register_post_uri (const char *uri, esp_err_t (*handler) (httpd_req_t * r))
+{
+   httpd_uri_t uri_struct = {
+      .uri = uri,
+      .method = HTTP_POST,
+      .handler = handler,
+   };
+   register_uri (&uri_struct);
+}
+
+static void
 register_get_uri (const char *uri, esp_err_t (*handler) (httpd_req_t * r))
 {
    httpd_uri_t uri_struct = {
@@ -275,8 +286,33 @@ web_root (httpd_req_t * req)
       return revk_web_settings (req);   // Direct to web set up
    revk_web_head (req, "OpenMic");
    revk_web_send (req, "<h1>%s</h1>", *hostname ? hostname : appname);
+   const char *er = NULL;
+   jo_t j = revk_web_query (req);
+   if (j)
+   {
+      if (jo_find (j, "tone") || jo_find (j, "dtmf"))
+      {
+         if (tones)
+            er = "Wait until finished";
+         else
+            tones = jo_strdup (j);
+      }
+      if (jo_find (j, "morse"))
+      {
+         if (morsemessage)
+            er = "Wait until finished";
+         else
+            morsemessage = jo_strdup (j);
+      }
+      jo_free (&j);
+   }
+   if (spklrc.set)
+      revk_web_send (req,
+                     "<form method=post><table><tr><td>Morse</td><td><input autofocus name=morse size=80></td></tr><tr><td>DTMF</td><td><input name=tone></td></tr></table><input type=submit value=Send></form>");
+   if (er)
+      revk_web_send (req, "<p>%s</p>", er);
    if (wifilock && b.sdpresent)
-      revk_web_send (req, "<p>For security reasons, settings are disabled whilst the SD card is inserted</p>");
+      revk_web_send (req, "<hr><p>For security reasons, settings are disabled whilst the SD card is inserted</p>");
    return revk_web_foot (req, 0, 1, NULL);
 }
 
@@ -1016,16 +1052,20 @@ spk_task (void *arg)
       }
       if (mode == SPK_TONE)
       {
-         if (morsemessage)
-            morsep = morsemessage;      // New message
-         else if (tones)
+         if (tones)
+         {
             tonep = tones;      // New tones
-         morseu = 60 * spkfreq / morsewpm / 50;
-         morsef = (60 * spkfreq / morsefwpm - 31 * morseu) / 19;
-         if (morsef < morseu)
-            morsef = morseu;
-         dtmfu = dtmftone * spkfreq / 1000;
-         dtmfg = dtmfgap * spkfreq / 1000;
+            dtmfu = dtmftone * spkfreq / 1000;
+            dtmfg = dtmfgap * spkfreq / 1000;
+         }
+         if (morsemessage)
+         {
+            morsep = morsemessage;      // New message
+            morsef = (60 * spkfreq / morsefwpm - 31 * morseu) / 19;
+            if (morsef < morseu)
+               morsef = morseu;
+            morseu = 60 * spkfreq / morsewpm / 50;
+         }
       }
       while (!b.die && mode)
       {
@@ -1106,7 +1146,10 @@ spk_task (void *arg)
                      if (morsep)
                         off = morsef * 7 - morseu;      // Word gap (we did morseu already)
                      else
+                     {
                         mode = SPK_IDLE;
+                        off = dtmfg;
+                     }
                      continue;
                   }
                   if (*tonep == '.')
@@ -1247,6 +1290,7 @@ app_main ()
    {
       revk_web_settings_add (webserver);
       register_get_uri ("/", web_root);
+      register_post_uri ("/", web_root);
    }
    led_strip_handle_t led_status = NULL;
    if (rgbstatus.set)
