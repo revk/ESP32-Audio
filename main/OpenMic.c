@@ -290,14 +290,14 @@ web_root (httpd_req_t * req)
    jo_t j = revk_web_query (req);
    if (j)
    {
-      if (jo_find (j, "tone") || jo_find (j, "dtmf"))
+      if (jo_find (j, "tone") || jo_find (j, "dtmf") || jo_find (j, "oa"))
       {
          if (tones)
             er = "Wait until finished";
          else
             tones = jo_strdup (j);
       }
-      if (jo_find (j, "morse"))
+      if (jo_find (j, "morse") || jo_find (j, "ud"))
       {
          if (morsemessage)
             er = "Wait until finished";
