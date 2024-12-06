@@ -49,7 +49,7 @@
         "silk_text_upright": false,
         "zones": {
           "45_degree_only": false,
-          "min_clearance": 0.2
+          "min_clearance": 0.0
         }
       },
       "diff_pair_dimensions": [
@@ -461,7 +461,7 @@
     "pinned_symbol_libs": []
   },
   "meta": {
-    "filename": "LED.kicad_pro",
+    "filename": "CommBadge.kicad_pro",
     "version": 1
   },
   "net_settings": {

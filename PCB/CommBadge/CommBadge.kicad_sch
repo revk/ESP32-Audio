@@ -710,6 +710,130 @@
 				)
 			)
 		)
+		(symbol "Device:Speaker"
+			(pin_names
+				(offset 0) hide)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(property "Reference" "LS"
+				(at 1.27 5.715 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify right)
+				)
+			)
+			(property "Value" "Speaker"
+				(at 1.27 3.81 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify right)
+				)
+			)
+			(property "Footprint" ""
+				(at 0 -5.08 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" "~"
+				(at -0.254 -1.27 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" "Speaker"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_keywords" "speaker sound"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "Speaker_0_0"
+				(rectangle
+					(start -2.54 1.27)
+					(end 1.016 -3.81)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 1.016 1.27) (xy 3.556 3.81) (xy 3.556 -6.35) (xy 1.016 -3.81)
+					)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(symbol "Speaker_1_1"
+				(pin input line
+					(at -5.08 0 0)
+					(length 2.54)
+					(name "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -5.08 -2.54 0)
+					(length 2.54)
+					(name "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+		)
 		(symbol "Regulator_Linear:TLV70033_SOT23-5"
 			(pin_names
 				(offset 0.254)
@@ -4963,6 +5087,12 @@
 		(uuid "4492bc87-2f43-4ce8-ba42-bbcb24409718")
 	)
 	(junction
+		(at 53.34 29.21)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "4b0c9282-92de-4c3b-9525-04545e220e03")
+	)
+	(junction
 		(at 104.775 21.59)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -5003,6 +5133,12 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "7f563873-3ee8-4406-a84f-6917ab101151")
+	)
+	(junction
+		(at 53.34 21.59)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "823ab663-04e0-4a83-84d2-f140470b2d03")
 	)
 	(junction
 		(at 99.06 29.21)
@@ -6156,7 +6292,7 @@
 			)
 		)
 	)
-	(global_label "DC"
+	(global_label "VBUS"
 		(shape output)
 		(at 264.795 31.75 0)
 		(fields_autoplaced yes)
@@ -6168,7 +6304,7 @@
 		)
 		(uuid "52537678-ece8-4de0-9961-4f2c9d469fee")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 269.666 31.75 0)
+			(at 272.0246 31.75 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -6200,7 +6336,7 @@
 			)
 		)
 	)
-	(global_label "DC"
+	(global_label "VBUS"
 		(shape output)
 		(at 224.79 30.48 0)
 		(fields_autoplaced yes)
@@ -6212,7 +6348,7 @@
 		)
 		(uuid "619ad959-a587-4465-b37c-e4a1df755950")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 229.5816 30.48 0)
+			(at 232.0196 30.48 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -6284,6 +6420,28 @@
 					(size 1.27 1.27)
 				)
 				(justify left)
+				(hide yes)
+			)
+		)
+	)
+	(global_label "VBUS"
+		(shape output)
+		(at 71.12 162.56 270)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "7165c47d-731e-4699-af57-376893b2c764")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 71.12 169.7896 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
 				(hide yes)
 			)
 		)
@@ -6596,7 +6754,7 @@
 			)
 		)
 	)
-	(global_label "DC"
+	(global_label "VBUS"
 		(shape output)
 		(at 62.23 136.525 90)
 		(fields_autoplaced yes)
@@ -6608,7 +6766,7 @@
 		)
 		(uuid "da788cd0-cfc6-47b3-9b52-2e007601e651")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 62.23 131.654 90)
+			(at 62.23 129.2954 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7990,6 +8148,72 @@
 	)
 	(symbol
 		(lib_id "power:+3.3V")
+		(at 53.34 21.59 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "2fc22a57-4d5c-463c-a8e2-146192d66d0c")
+		(property "Reference" "#PWR07"
+			(at 53.34 25.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "+3V3"
+			(at 53.34 18.0142 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 53.34 21.59 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 53.34 21.59 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"+3.3V\""
+			(at 53.34 21.59 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "90cd6ddc-2586-4506-9835-e000ffd89a1d")
+		)
+		(instances
+			(project "CommBadge"
+				(path "/46c350bb-7de4-4e81-aafd-4af55e37aab0"
+					(reference "#PWR07")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:+3.3V")
 		(at 44.45 137.16 0)
 		(unit 1)
 		(exclude_from_sim no)
@@ -9157,6 +9381,85 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:Speaker")
+		(at 141.605 56.515 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "564a7056-712d-4012-a95a-c3862159d59e")
+		(property "Reference" "LS1"
+			(at 145.923 56.5728 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "Speaker"
+			(at 145.923 58.9971 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "RevK:KLJ-Speaker"
+			(at 141.605 61.595 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "https://www.lcsc.com/datasheet/lcsc_datasheet_2309191755_KELIKING-KLJ-01304T-08R07W_C18186315.pdf"
+			(at 141.351 57.785 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Speaker"
+			(at 141.605 56.515 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C18186315"
+			(at 141.605 56.515 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "2"
+			(uuid "ba463315-0a4e-4ca1-ab97-590db50bc7ad")
+		)
+		(pin "1"
+			(uuid "39af48d1-e85e-4072-a251-d81334308a44")
+		)
+		(instances
+			(project ""
+				(path "/46c350bb-7de4-4e81-aafd-4af55e37aab0"
+					(reference "LS1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:+3.3V")
 		(at 78.74 137.16 0)
 		(unit 1)
@@ -9565,6 +9868,72 @@
 			(project "CommBadge"
 				(path "/46c350bb-7de4-4e81-aafd-4af55e37aab0"
 					(reference "C12")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:PWR_FLAG")
+		(at 71.12 162.56 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "6896dc29-0799-4d43-8d80-1cde6932af2f")
+		(property "Reference" "#FLG03"
+			(at 71.12 160.655 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "PWR_FLAG"
+			(at 71.12 158.4269 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 71.12 162.56 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 71.12 162.56 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Special symbol for telling ERC where power comes from"
+			(at 71.12 162.56 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "7fb1ef48-6daa-4d97-9bb0-0610e9e1a006")
+		)
+		(instances
+			(project ""
+				(path "/46c350bb-7de4-4e81-aafd-4af55e37aab0"
+					(reference "#FLG03")
 					(unit 1)
 				)
 			)
@@ -11050,6 +11419,73 @@
 		)
 	)
 	(symbol
+		(lib_id "power:GND")
+		(at 53.34 29.21 0)
+		(mirror y)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "adc7e363-eb13-4548-b8da-6e8ec79b6a63")
+		(property "Reference" "#PWR02"
+			(at 53.34 35.56 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "GND"
+			(at 53.213 32.4612 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" ""
+			(at 53.34 29.21 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 53.34 29.21 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 53.34 29.21 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "373b7950-b41e-4fd5-ae08-3e89a78938bc")
+		)
+		(instances
+			(project "CommBadge"
+				(path "/46c350bb-7de4-4e81-aafd-4af55e37aab0"
+					(reference "#PWR02")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Device:R")
 		(at 80.01 100.965 0)
 		(unit 1)
@@ -11367,6 +11803,72 @@
 			(project "LED"
 				(path "/46c350bb-7de4-4e81-aafd-4af55e37aab0"
 					(reference "#PWR031")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 60.96 162.56 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "beb9ba3c-eda8-457f-8485-38f14246c2c1")
+		(property "Reference" "#PWR039"
+			(at 60.96 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "GND"
+			(at 60.96 167.0034 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 60.96 162.56 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 60.96 162.56 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 60.96 162.56 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "51dadbd1-3a30-40d9-848a-1f48af0838f1")
+		)
+		(instances
+			(project "CommBadge"
+				(path "/46c350bb-7de4-4e81-aafd-4af55e37aab0"
+					(reference "#PWR039")
 					(unit 1)
 				)
 			)
@@ -12971,6 +13473,72 @@
 			(project "LED"
 				(path "/46c350bb-7de4-4e81-aafd-4af55e37aab0"
 					(reference "D3")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:PWR_FLAG")
+		(at 60.96 162.56 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "fd78a048-a4fa-4f6c-87c4-e3860e4d8e70")
+		(property "Reference" "#FLG02"
+			(at 60.96 160.655 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "PWR_FLAG"
+			(at 60.96 158.4269 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 60.96 162.56 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 60.96 162.56 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Special symbol for telling ERC where power comes from"
+			(at 60.96 162.56 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "a7eba878-fa3f-4779-89bf-35400e9b253f")
+		)
+		(instances
+			(project ""
+				(path "/46c350bb-7de4-4e81-aafd-4af55e37aab0"
+					(reference "#FLG02")
 					(unit 1)
 				)
 			)
