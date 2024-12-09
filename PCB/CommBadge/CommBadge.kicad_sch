@@ -5051,28 +5051,22 @@
 		(uuid "01212984-4bed-4b5c-b6e2-ab7794a05571")
 	)
 	(junction
+		(at 110.49 29.21)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "22dd7069-def0-4825-b321-689e6d45735d")
+	)
+	(junction
+		(at 99.06 29.21)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "2c1d4757-d328-427b-931c-46ddb3003821")
+	)
+	(junction
 		(at 87.63 21.59)
 		(diameter 0)
 		(color 0 0 0 0)
-		(uuid "1ddcbf9f-5bd0-4cea-807e-39391d91a257")
-	)
-	(junction
-		(at 76.2 21.59)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "30050bf4-a644-45b4-8a92-bd40d670b8c5")
-	)
-	(junction
-		(at 87.63 29.21)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "340a784f-f73d-4462-8faf-33338ad8a4b0")
-	)
-	(junction
-		(at 64.77 21.59)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "38adaaf0-3b9b-4c7c-a6e9-9ea7f69c323c")
+		(uuid "41570456-f702-4550-9885-b973c5db69a8")
 	)
 	(junction
 		(at 93.345 29.21)
@@ -5087,10 +5081,10 @@
 		(uuid "4492bc87-2f43-4ce8-ba42-bbcb24409718")
 	)
 	(junction
-		(at 53.34 29.21)
+		(at 76.2 21.59)
 		(diameter 0)
 		(color 0 0 0 0)
-		(uuid "4b0c9282-92de-4c3b-9525-04545e220e03")
+		(uuid "4c58e290-214b-4813-a84a-dc8d1579e769")
 	)
 	(junction
 		(at 104.775 21.59)
@@ -5099,10 +5093,10 @@
 		(uuid "584a0058-35eb-4ab6-b788-7109d59bffda")
 	)
 	(junction
-		(at 99.06 21.59)
+		(at 87.63 29.21)
 		(diameter 0)
 		(color 0 0 0 0)
-		(uuid "59b3f794-4acf-4257-86c9-8931353963b5")
+		(uuid "592e40d6-9655-48dc-9137-42a014e3aa7a")
 	)
 	(junction
 		(at 202.565 109.855)
@@ -5111,10 +5105,22 @@
 		(uuid "5ba08c10-c173-4aaf-9b53-fd389b1173a0")
 	)
 	(junction
-		(at 64.77 29.21)
+		(at 76.2 29.21)
 		(diameter 0)
 		(color 0 0 0 0)
-		(uuid "679f7e9a-6961-4d17-958f-a8fe0a0de79a")
+		(uuid "63193549-b81c-41ee-8467-34f3200f141a")
+	)
+	(junction
+		(at 64.77 21.59)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "71550198-6793-4380-941b-67602659698a")
+	)
+	(junction
+		(at 110.49 21.59)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "720b3d66-2b58-4d70-bc44-d6e311f6e782")
 	)
 	(junction
 		(at 59.055 29.21)
@@ -5123,28 +5129,10 @@
 		(uuid "724447cf-f8bc-4921-9987-142b39ac1d46")
 	)
 	(junction
-		(at 110.49 29.21)
+		(at 99.06 21.59)
 		(diameter 0)
 		(color 0 0 0 0)
-		(uuid "7ea8fa6a-d468-4547-b2c1-1e05b1c51799")
-	)
-	(junction
-		(at 110.49 21.59)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "7f563873-3ee8-4406-a84f-6917ab101151")
-	)
-	(junction
-		(at 53.34 21.59)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "823ab663-04e0-4a83-84d2-f140470b2d03")
-	)
-	(junction
-		(at 99.06 29.21)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "827eb6c0-c298-4c45-a300-8ba6e7b6e102")
+		(uuid "7939d8d6-8172-4eb8-aebd-080926c5ea9a")
 	)
 	(junction
 		(at 177.8 109.855)
@@ -5177,22 +5165,28 @@
 		(uuid "942bcf10-f562-4599-ad4f-742ba45f2481")
 	)
 	(junction
+		(at 64.77 29.21)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "96dd1153-89af-4f9a-b6dd-51fbc34ec0cf")
+	)
+	(junction
 		(at 205.74 68.58)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "9c659bea-53fe-4ba3-9d8f-230b5b588746")
 	)
 	(junction
+		(at 53.34 29.21)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "abc44b1d-553e-499a-b199-ccb21ace5349")
+	)
+	(junction
 		(at 236.22 100.33)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "b2584213-e648-4d42-a648-8ccd4580ebaf")
-	)
-	(junction
-		(at 76.2 29.21)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "b3202a0e-037f-469c-8b49-7b5e4cae6456")
 	)
 	(junction
 		(at 81.915 21.59)
@@ -5211,6 +5205,12 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "d0fa751a-72db-4116-9bcb-a8b45d91c66d")
+	)
+	(junction
+		(at 53.34 21.59)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "d59f8e41-82b1-40e4-b738-8b4cc330f75a")
 	)
 	(junction
 		(at 179.07 30.48)
@@ -5279,7 +5279,7 @@
 		(uuid "fb201a38-238f-4c0b-ba85-2f84d914bbe4")
 	)
 	(no_connect
-		(at 66.04 71.12)
+		(at 35.56 55.88)
 		(uuid "31b0d9c2-4628-4ed6-8d29-9b5ad2c261d7")
 	)
 	(no_connect
@@ -5291,11 +5291,11 @@
 		(uuid "3b6982b8-3521-4890-bfec-5f645dfcab3c")
 	)
 	(no_connect
-		(at 35.56 68.58)
+		(at 66.04 53.34)
 		(uuid "3ba863ec-9576-4240-8247-730086e7aca4")
 	)
 	(no_connect
-		(at 35.56 91.44)
+		(at 66.04 68.58)
 		(uuid "3c7f284f-a1d5-46d5-b2f3-fbf91f6f2a24")
 	)
 	(no_connect
@@ -5327,15 +5327,11 @@
 		(uuid "71ba25bc-6077-4d2e-a97c-affcbafb60d1")
 	)
 	(no_connect
-		(at 136.525 67.945)
-		(uuid "7eec6177-bb4e-4d79-8724-1dea6cead6de")
-	)
-	(no_connect
-		(at 66.04 66.04)
+		(at 35.56 58.42)
 		(uuid "8def0a08-d117-4daf-8854-fef28b969cb1")
 	)
 	(no_connect
-		(at 35.56 93.98)
+		(at 35.56 76.2)
 		(uuid "8ea5a801-1422-497c-be83-e434efd10b21")
 	)
 	(no_connect
@@ -5359,27 +5355,27 @@
 		(uuid "d34eb50a-223a-44aa-88cc-2616cdedfadc")
 	)
 	(no_connect
-		(at 35.56 78.74)
-		(uuid "d52fede9-2394-45ce-8342-beb66fa002c3")
-	)
-	(no_connect
 		(at 66.04 78.74)
 		(uuid "d6d50b9d-b41b-4a93-8f73-91e673ce2685")
 	)
 	(no_connect
-		(at 35.56 88.9)
+		(at 66.04 66.04)
 		(uuid "e19d8f39-3465-4295-9e39-de9ed0ec9840")
 	)
 	(no_connect
-		(at 35.56 81.28)
+		(at 35.56 63.5)
+		(uuid "ef976f27-fc0e-4666-b2cb-ec654b3525ee")
+	)
+	(no_connect
+		(at 35.56 60.96)
 		(uuid "f1696ac8-f96d-4603-8fde-7e244b03bef9")
 	)
 	(no_connect
-		(at 66.04 68.58)
+		(at 35.56 53.34)
 		(uuid "f6b7b0f5-1df1-4ed6-975e-3712cb72383b")
 	)
 	(no_connect
-		(at 35.56 86.36)
+		(at 66.04 71.12)
 		(uuid "fefe2d5b-51a0-4347-ace5-07f1eef2e4b4")
 	)
 	(wire
@@ -5411,16 +5407,6 @@
 			(type default)
 		)
 		(uuid "0c61b244-351d-405d-9ce4-7dac92fde618")
-	)
-	(wire
-		(pts
-			(xy 76.2 21.59) (xy 81.915 21.59)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "0e80c726-94bd-470e-bb0c-74b476bfb046")
 	)
 	(wire
 		(pts
@@ -5464,6 +5450,16 @@
 	)
 	(wire
 		(pts
+			(xy 87.63 29.21) (xy 93.345 29.21)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "198a89cf-0b6a-4b4a-96ac-8bcf96a10c77")
+	)
+	(wire
+		(pts
 			(xy 260.35 131.445) (xy 260.35 135.89)
 		)
 		(stroke
@@ -5494,16 +5490,6 @@
 	)
 	(wire
 		(pts
-			(xy 87.63 29.21) (xy 93.345 29.21)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "27d46386-daf0-40f4-81f6-8b9340f52226")
-	)
-	(wire
-		(pts
 			(xy 59.055 29.21) (xy 64.77 29.21)
 		)
 		(stroke
@@ -5514,16 +5500,6 @@
 	)
 	(wire
 		(pts
-			(xy 110.49 21.59) (xy 116.205 21.59)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "2b12cd89-07c0-40e3-9280-b1f2ad6fa9c8")
-	)
-	(wire
-		(pts
 			(xy 91.44 25.4) (xy 95.25 25.4)
 		)
 		(stroke
@@ -5531,6 +5507,16 @@
 			(type default)
 		)
 		(uuid "2e2b398d-6fc9-480f-ab63-8f356c9aa540")
+	)
+	(wire
+		(pts
+			(xy 99.06 21.59) (xy 104.775 21.59)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2f6906f8-5d92-4f14-9079-6c08d3650556")
 	)
 	(wire
 		(pts
@@ -5574,13 +5560,23 @@
 	)
 	(wire
 		(pts
+			(xy 110.49 29.21) (xy 116.205 29.21)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "44c5f3b1-7451-42ed-baa3-edb56cd8a8d6")
+	)
+	(wire
+		(pts
 			(xy 87.63 21.59) (xy 93.345 21.59)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "43897b99-0378-4e00-955e-dfa8cf778c20")
+		(uuid "462e95f2-e89c-4254-b45a-22482a080acb")
 	)
 	(wire
 		(pts
@@ -5591,16 +5587,6 @@
 			(type default)
 		)
 		(uuid "471d718b-e8df-479c-8a02-643155bd9902")
-	)
-	(wire
-		(pts
-			(xy 76.2 29.21) (xy 81.915 29.21)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "4d362cc2-c91b-4f4c-a8fa-56ab212a37d6")
 	)
 	(wire
 		(pts
@@ -5621,6 +5607,16 @@
 			(type default)
 		)
 		(uuid "5421f73f-df44-411f-924e-8fb444581e4c")
+	)
+	(wire
+		(pts
+			(xy 64.77 21.59) (xy 70.485 21.59)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5651927b-dc80-49cd-ab72-480f84da623e")
 	)
 	(wire
 		(pts
@@ -5804,6 +5800,16 @@
 	)
 	(wire
 		(pts
+			(xy 76.2 29.21) (xy 81.915 29.21)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "93807a9e-a65c-42d7-a579-37dd7d83f06c")
+	)
+	(wire
+		(pts
 			(xy 184.15 109.855) (xy 184.15 112.395)
 		)
 		(stroke
@@ -5834,13 +5840,23 @@
 	)
 	(wire
 		(pts
-			(xy 64.77 29.21) (xy 70.485 29.21)
+			(xy 110.49 21.59) (xy 116.205 21.59)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "9bd2ed3b-f3b2-4aaa-b541-ddfa827b05d2")
+		(uuid "9a395a84-7a59-4dea-9bb0-0862a1da712e")
+	)
+	(wire
+		(pts
+			(xy 76.2 21.59) (xy 81.915 21.59)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9caf9ce1-dc31-4f7a-9509-8ecd37092287")
 	)
 	(wire
 		(pts
@@ -5871,6 +5887,16 @@
 			(type default)
 		)
 		(uuid "aa8e79d5-4110-472a-8939-dffc4dee8b42")
+	)
+	(wire
+		(pts
+			(xy 99.06 29.21) (xy 104.775 29.21)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ae40e482-2339-4f6e-b5c4-1ec1a2a6ea35")
 	)
 	(wire
 		(pts
@@ -5964,16 +5990,6 @@
 	)
 	(wire
 		(pts
-			(xy 99.06 29.21) (xy 104.775 29.21)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "cdb9dbc7-d19b-4586-933f-62e0b0a02cc3")
-	)
-	(wire
-		(pts
 			(xy 81.915 21.59) (xy 87.63 21.59)
 		)
 		(stroke
@@ -5981,26 +5997,6 @@
 			(type default)
 		)
 		(uuid "d60f7ad6-a945-4ba2-9a97-b31c3af93c2e")
-	)
-	(wire
-		(pts
-			(xy 110.49 29.21) (xy 116.205 29.21)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "daa70fa0-5d72-44e6-a955-d83fa65acb91")
-	)
-	(wire
-		(pts
-			(xy 64.77 21.59) (xy 70.485 21.59)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "dda23336-6a1a-493c-90fb-fab1a14c04cb")
 	)
 	(wire
 		(pts
@@ -6024,13 +6020,13 @@
 	)
 	(wire
 		(pts
-			(xy 99.06 21.59) (xy 104.775 21.59)
+			(xy 64.77 29.21) (xy 70.485 29.21)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "eb1eca46-5995-4fdd-b50e-8326337e2d73")
+		(uuid "ea63f125-fe17-4b42-b8a6-bf3f2c1c0a32")
 	)
 	(wire
 		(pts
@@ -6112,6 +6108,28 @@
 					(size 1.27 1.27)
 				)
 				(justify left)
+				(hide yes)
+			)
+		)
+	)
+	(global_label "VBUS"
+		(shape output)
+		(at 27.94 86.36 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "0bdce414-93bf-4cf6-9eb3-4d2aaff5bcbe")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 20.7104 86.36 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
 				(hide yes)
 			)
 		)
@@ -6228,7 +6246,7 @@
 	)
 	(global_label "PUSH"
 		(shape input)
-		(at 35.56 76.2 180)
+		(at 35.56 78.74 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -6238,7 +6256,7 @@
 		)
 		(uuid "38b3766b-4e9b-4115-ae90-73a5fd8dda55")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 28.0885 76.2 0)
+			(at 28.0885 78.74 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -6316,7 +6334,7 @@
 	)
 	(global_label "SKPSD"
 		(shape output)
-		(at 35.56 55.88 180)
+		(at 35.56 93.98 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -6326,7 +6344,7 @@
 		)
 		(uuid "5fe26b57-9e11-42ed-b922-055aae09bb92")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 27 55.88 0)
+			(at 27 93.98 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -6360,7 +6378,7 @@
 	)
 	(global_label "SKPSCK"
 		(shape output)
-		(at 35.56 53.34 180)
+		(at 35.56 91.44 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -6370,29 +6388,7 @@
 		)
 		(uuid "648c157c-29e2-4d25-8608-5cc5bd9a61e7")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 25.73 53.34 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-				(hide yes)
-			)
-		)
-	)
-	(global_label "RGB"
-		(shape output)
-		(at 35.56 63.5 180)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right)
-		)
-		(uuid "67a7c84e-b4dc-4466-9817-bd25dd5cbf29")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 29.419 63.5 0)
+			(at 25.73 91.44 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -6536,22 +6532,22 @@
 	)
 	(global_label "SKPPWR"
 		(shape output)
-		(at 66.04 53.34 0)
+		(at 35.56 68.58 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left)
+			(justify right)
 		)
 		(uuid "9546d6a1-4173-460d-8fe3-4ffd4efcc5a4")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 76.1119 53.34 0)
+			(at 25.4881 68.58 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(justify left)
+				(justify right)
 				(hide yes)
 			)
 		)
@@ -6624,7 +6620,7 @@
 	)
 	(global_label "RGB"
 		(shape output)
-		(at 35.56 58.42 180)
+		(at 35.56 50.8 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -6634,7 +6630,7 @@
 		)
 		(uuid "b2fcf4ab-1e4a-4a29-9a3f-b95f7bc1fefb")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 29.419 58.42 0)
+			(at 29.419 50.8 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -6690,7 +6686,7 @@
 	)
 	(global_label "CHARGING"
 		(shape input)
-		(at 35.56 60.96 180)
+		(at 35.56 81.28 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -6700,7 +6696,7 @@
 		)
 		(uuid "c8610a44-6b1a-42cb-819a-9b0b21e707c1")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 23.7946 60.96 0)
+			(at 23.7946 81.28 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -6866,7 +6862,7 @@
 	)
 	(global_label "SKPWS"
 		(shape output)
-		(at 35.56 50.8 180)
+		(at 35.56 88.9 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -6876,7 +6872,7 @@
 		)
 		(uuid "f0605392-6eb6-4dc1-bed9-c8669e1b4e70")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 26.8186 50.8 0)
+			(at 26.8186 88.9 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7331,7 +7327,7 @@
 	)
 	(symbol
 		(lib_id "RevK:WS2812B-1mm")
-		(at 53.34 25.4 0)
+		(at 64.77 25.4 0)
 		(mirror x)
 		(unit 1)
 		(exclude_from_sim no)
@@ -7340,7 +7336,7 @@
 		(dnp no)
 		(uuid "0d03aa03-e1c5-4589-a322-bed2ffeedfa2")
 		(property "Reference" "D4"
-			(at 53.34 25.4 0)
+			(at 64.77 25.4 0)
 			(do_not_autoplace yes)
 			(effects
 				(font
@@ -7349,7 +7345,7 @@
 			)
 		)
 		(property "Value" "XL-1010RGBC-WS2812B"
-			(at 54.61 19.685 0)
+			(at 66.04 19.685 0)
 			(effects
 				(font
 					(size 1 1)
@@ -7359,7 +7355,7 @@
 			)
 		)
 		(property "Footprint" "RevK:SMD1010"
-			(at 54.61 17.78 0)
+			(at 66.04 17.78 0)
 			(effects
 				(font
 					(size 1 1)
@@ -7369,7 +7365,7 @@
 			)
 		)
 		(property "Datasheet" "https://datasheet.lcsc.com/lcsc/2301111010_XINGLIGHT-XL-1010RGBC-WS2812B_C5349953.pdf"
-			(at 54.61 15.875 0)
+			(at 66.04 15.875 0)
 			(effects
 				(font
 					(size 1 1)
@@ -7379,7 +7375,7 @@
 			)
 		)
 		(property "Description" "RGB LED with integrated controller"
-			(at 53.34 25.4 0)
+			(at 64.77 25.4 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7388,7 +7384,7 @@
 			)
 		)
 		(property "LCSC Part #" "C5349953"
-			(at 54.61 13.97 0)
+			(at 66.04 13.97 0)
 			(effects
 				(font
 					(size 1 1)
@@ -7486,7 +7482,7 @@
 	)
 	(symbol
 		(lib_id "RevK:WS2812B-1mm")
-		(at 76.2 25.4 0)
+		(at 99.06 25.4 0)
 		(mirror x)
 		(unit 1)
 		(exclude_from_sim no)
@@ -7495,7 +7491,7 @@
 		(dnp no)
 		(uuid "126f471c-d6d2-4351-aa39-025bcfe2ade7")
 		(property "Reference" "D6"
-			(at 76.2 25.4 0)
+			(at 99.06 25.4 0)
 			(do_not_autoplace yes)
 			(effects
 				(font
@@ -7504,7 +7500,7 @@
 			)
 		)
 		(property "Value" "XL-1010RGBC-WS2812B"
-			(at 77.47 19.685 0)
+			(at 100.33 19.685 0)
 			(effects
 				(font
 					(size 1 1)
@@ -7514,7 +7510,7 @@
 			)
 		)
 		(property "Footprint" "RevK:SMD1010"
-			(at 77.47 17.78 0)
+			(at 100.33 17.78 0)
 			(effects
 				(font
 					(size 1 1)
@@ -7524,7 +7520,7 @@
 			)
 		)
 		(property "Datasheet" "https://datasheet.lcsc.com/lcsc/2301111010_XINGLIGHT-XL-1010RGBC-WS2812B_C5349953.pdf"
-			(at 77.47 15.875 0)
+			(at 100.33 15.875 0)
 			(effects
 				(font
 					(size 1 1)
@@ -7534,7 +7530,7 @@
 			)
 		)
 		(property "Description" "RGB LED with integrated controller"
-			(at 76.2 25.4 0)
+			(at 99.06 25.4 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7543,7 +7539,7 @@
 			)
 		)
 		(property "LCSC Part #" "C5349953"
-			(at 77.47 13.97 0)
+			(at 100.33 13.97 0)
 			(effects
 				(font
 					(size 1 1)
@@ -8273,6 +8269,73 @@
 			(project "LED"
 				(path "/46c350bb-7de4-4e81-aafd-4af55e37aab0"
 					(reference "#PWR010")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 31.75 86.36 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "35adc2f0-eb0c-410f-aa7a-3910165ad3ab")
+		(property "Reference" "R4"
+			(at 31.75 84.455 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "10K"
+			(at 31.75 86.36 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "RevK:R_0402"
+			(at 31.75 88.138 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 31.75 86.36 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 31.75 86.36 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "3c27fa05-45db-4b77-bbec-fd557e1ed116")
+		)
+		(pin "2"
+			(uuid "e66324c5-3263-4df2-83db-47a5206a7506")
+		)
+		(instances
+			(project "CommBadge"
+				(path "/46c350bb-7de4-4e81-aafd-4af55e37aab0"
+					(reference "R4")
 					(unit 1)
 				)
 			)
@@ -10006,6 +10069,73 @@
 		)
 	)
 	(symbol
+		(lib_id "power:GND")
+		(at 136.525 67.945 90)
+		(mirror x)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "6b9cbcc6-8eb5-43b1-80ac-c0a65a54e53c")
+		(property "Reference" "#PWR042"
+			(at 142.875 67.945 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "GND"
+			(at 139.7762 68.072 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" ""
+			(at 136.525 67.945 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 136.525 67.945 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 136.525 67.945 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "2546999e-f4ec-4770-a78d-768c52ef7470")
+		)
+		(instances
+			(project "CommBadge"
+				(path "/46c350bb-7de4-4e81-aafd-4af55e37aab0"
+					(reference "#PWR042")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:+3.3V")
 		(at 38.735 137.16 0)
 		(unit 1)
@@ -11566,7 +11696,7 @@
 	)
 	(symbol
 		(lib_id "RevK:WS2812B-1mm")
-		(at 87.63 25.4 0)
+		(at 110.49 25.4 0)
 		(mirror x)
 		(unit 1)
 		(exclude_from_sim no)
@@ -11575,7 +11705,7 @@
 		(dnp no)
 		(uuid "b77e8ab3-ec75-4840-9eb3-86dc68026595")
 		(property "Reference" "D7"
-			(at 87.63 25.4 0)
+			(at 110.49 25.4 0)
 			(do_not_autoplace yes)
 			(effects
 				(font
@@ -11584,7 +11714,7 @@
 			)
 		)
 		(property "Value" "XL-1010RGBC-WS2812B"
-			(at 88.9 19.685 0)
+			(at 111.76 19.685 0)
 			(effects
 				(font
 					(size 1 1)
@@ -11594,7 +11724,7 @@
 			)
 		)
 		(property "Footprint" "RevK:SMD1010"
-			(at 88.9 17.78 0)
+			(at 111.76 17.78 0)
 			(effects
 				(font
 					(size 1 1)
@@ -11604,7 +11734,7 @@
 			)
 		)
 		(property "Datasheet" "https://datasheet.lcsc.com/lcsc/2301111010_XINGLIGHT-XL-1010RGBC-WS2812B_C5349953.pdf"
-			(at 88.9 15.875 0)
+			(at 111.76 15.875 0)
 			(effects
 				(font
 					(size 1 1)
@@ -11614,7 +11744,7 @@
 			)
 		)
 		(property "Description" "RGB LED with integrated controller"
-			(at 87.63 25.4 0)
+			(at 110.49 25.4 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11623,7 +11753,7 @@
 			)
 		)
 		(property "LCSC Part #" "C5349953"
-			(at 88.9 13.97 0)
+			(at 111.76 13.97 0)
 			(effects
 				(font
 					(size 1 1)
@@ -11655,7 +11785,7 @@
 	)
 	(symbol
 		(lib_id "RevK:WS2812B-1mm")
-		(at 64.77 25.4 0)
+		(at 76.2 25.4 0)
 		(mirror x)
 		(unit 1)
 		(exclude_from_sim no)
@@ -11664,7 +11794,7 @@
 		(dnp no)
 		(uuid "b806e77e-3f0c-471f-aa74-3fdadcc86c2b")
 		(property "Reference" "D5"
-			(at 64.77 25.4 0)
+			(at 76.2 25.4 0)
 			(do_not_autoplace yes)
 			(effects
 				(font
@@ -11673,7 +11803,7 @@
 			)
 		)
 		(property "Value" "XL-1010RGBC-WS2812B"
-			(at 66.04 19.685 0)
+			(at 77.47 19.685 0)
 			(effects
 				(font
 					(size 1 1)
@@ -11683,7 +11813,7 @@
 			)
 		)
 		(property "Footprint" "RevK:SMD1010"
-			(at 66.04 17.78 0)
+			(at 77.47 17.78 0)
 			(effects
 				(font
 					(size 1 1)
@@ -11693,7 +11823,7 @@
 			)
 		)
 		(property "Datasheet" "https://datasheet.lcsc.com/lcsc/2301111010_XINGLIGHT-XL-1010RGBC-WS2812B_C5349953.pdf"
-			(at 66.04 15.875 0)
+			(at 77.47 15.875 0)
 			(effects
 				(font
 					(size 1 1)
@@ -11703,7 +11833,7 @@
 			)
 		)
 		(property "Description" "RGB LED with integrated controller"
-			(at 64.77 25.4 0)
+			(at 76.2 25.4 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11712,7 +11842,7 @@
 			)
 		)
 		(property "LCSC Part #" "C5349953"
-			(at 66.04 13.97 0)
+			(at 77.47 13.97 0)
 			(effects
 				(font
 					(size 1 1)
@@ -12549,7 +12679,7 @@
 	)
 	(symbol
 		(lib_id "RevK:WS2812B-1mm")
-		(at 99.06 25.4 0)
+		(at 87.63 25.4 0)
 		(mirror x)
 		(unit 1)
 		(exclude_from_sim no)
@@ -12558,7 +12688,7 @@
 		(dnp no)
 		(uuid "e5031f10-398f-493d-98d4-af165f13aadb")
 		(property "Reference" "D8"
-			(at 99.06 25.4 0)
+			(at 87.63 25.4 0)
 			(do_not_autoplace yes)
 			(effects
 				(font
@@ -12567,7 +12697,7 @@
 			)
 		)
 		(property "Value" "XL-1010RGBC-WS2812B"
-			(at 100.33 19.685 0)
+			(at 88.9 19.685 0)
 			(effects
 				(font
 					(size 1 1)
@@ -12577,7 +12707,7 @@
 			)
 		)
 		(property "Footprint" "RevK:SMD1010"
-			(at 100.33 17.78 0)
+			(at 88.9 17.78 0)
 			(effects
 				(font
 					(size 1 1)
@@ -12587,7 +12717,7 @@
 			)
 		)
 		(property "Datasheet" "https://datasheet.lcsc.com/lcsc/2301111010_XINGLIGHT-XL-1010RGBC-WS2812B_C5349953.pdf"
-			(at 100.33 15.875 0)
+			(at 88.9 15.875 0)
 			(effects
 				(font
 					(size 1 1)
@@ -12597,7 +12727,7 @@
 			)
 		)
 		(property "Description" "RGB LED with integrated controller"
-			(at 99.06 25.4 0)
+			(at 87.63 25.4 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12606,7 +12736,7 @@
 			)
 		)
 		(property "LCSC Part #" "C5349953"
-			(at 100.33 13.97 0)
+			(at 88.9 13.97 0)
 			(effects
 				(font
 					(size 1 1)
@@ -12770,7 +12900,7 @@
 	)
 	(symbol
 		(lib_id "RevK:WS2812B-1mm")
-		(at 110.49 25.4 0)
+		(at 53.34 25.4 0)
 		(mirror x)
 		(unit 1)
 		(exclude_from_sim no)
@@ -12779,7 +12909,7 @@
 		(dnp no)
 		(uuid "e8f27c82-21e2-45e7-a929-72e335816e2c")
 		(property "Reference" "D9"
-			(at 110.49 25.4 0)
+			(at 53.34 25.4 0)
 			(do_not_autoplace yes)
 			(effects
 				(font
@@ -12788,7 +12918,7 @@
 			)
 		)
 		(property "Value" "XL-1010RGBC-WS2812B"
-			(at 111.76 19.685 0)
+			(at 54.61 19.685 0)
 			(effects
 				(font
 					(size 1 1)
@@ -12798,7 +12928,7 @@
 			)
 		)
 		(property "Footprint" "RevK:SMD1010"
-			(at 111.76 17.78 0)
+			(at 54.61 17.78 0)
 			(effects
 				(font
 					(size 1 1)
@@ -12808,7 +12938,7 @@
 			)
 		)
 		(property "Datasheet" "https://datasheet.lcsc.com/lcsc/2301111010_XINGLIGHT-XL-1010RGBC-WS2812B_C5349953.pdf"
-			(at 111.76 15.875 0)
+			(at 54.61 15.875 0)
 			(effects
 				(font
 					(size 1 1)
@@ -12818,7 +12948,7 @@
 			)
 		)
 		(property "Description" "RGB LED with integrated controller"
-			(at 110.49 25.4 0)
+			(at 53.34 25.4 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12827,7 +12957,7 @@
 			)
 		)
 		(property "LCSC Part #" "C5349953"
-			(at 111.76 13.97 0)
+			(at 54.61 13.97 0)
 			(effects
 				(font
 					(size 1 1)
