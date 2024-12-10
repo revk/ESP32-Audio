@@ -646,6 +646,7 @@ ir_task (void *arg)
       if (xQueueReceive (receive_queue, &rx_data, pdMS_TO_TICKS (1000)) == pdPASS)
       {
          ESP_LOGE (TAG, "Symbols %d", rx_data.num_symbols);
+	 // TODO decode
 
          // Next
          REVK_ERR_CHECK (rmt_receive (rx_channel, rmt_rx_symbols, sizeof (rmt_rx_symbols), &receive_config));
