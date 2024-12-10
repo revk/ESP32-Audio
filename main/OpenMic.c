@@ -602,7 +602,7 @@ rmt_rx_done_callback (rmt_channel_handle_t channel, const rmt_rx_done_event_data
 void
 ir_task (void *arg)
 {
-	revk_gpio_input(ir);
+   revk_gpio_input (ir);
    rmt_rx_channel_config_t rx_channel_cfg = {
       .clk_src = RMT_CLK_SRC_DEFAULT,
       .resolution_hz = 1000000,
@@ -615,8 +615,19 @@ ir_task (void *arg)
    };
    rmt_channel_handle_t rx_channel = NULL;
    REVK_ERR_CHECK (rmt_new_rx_channel (&rx_channel_cfg, &rx_channel));
-
+   if (!rx_channel)
+   {
+      ESP_LOGE (TAG, "No RMT Rx");
+      vTaskDelete (NULL);
+      return;
+   }
    QueueHandle_t receive_queue = xQueueCreate (1, sizeof (rmt_rx_done_event_data_t));
+   if (!receive_queue)
+   {
+      ESP_LOGE (TAG, "No RMT Queue");
+      vTaskDelete (NULL);
+      return;
+   }
    rmt_rx_event_callbacks_t cbs = {
       .on_recv_done = rmt_rx_done_callback,
    };
@@ -636,7 +647,8 @@ ir_task (void *arg)
       {
          ESP_LOGE (TAG, "Symbols %d", rx_data.num_symbols);
 
-
+         // Next
+         REVK_ERR_CHECK (rmt_receive (rx_channel, rmt_rx_symbols, sizeof (rmt_rx_symbols), &receive_config));
       }
    }
    vTaskDelete (NULL);
