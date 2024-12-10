@@ -13,6 +13,7 @@ static const char TAG[] = "OpenMic";
 #include <driver/i2s_std.h>
 #include <driver/i2s_pdm.h>
 #include <driver/rtc_io.h>
+#include <driver/rmt_rx.h>
 #include "esp_http_client.h"
 #include <esp_http_server.h>
 #include "esp_crt_bundle.h"
@@ -583,6 +584,61 @@ sd_task (void *arg)
    revk_gpio_set (sdss, 1);
    rtc_gpio_set_direction_in_sleep (sdss.num, RTC_GPIO_MODE_OUTPUT_ONLY);
    rtc_gpio_set_level (sdss.num, 1 - sdss.invert);
+   vTaskDelete (NULL);
+}
+
+rmt_symbol_word_t rmt_rx_symbols[64];
+rmt_rx_done_event_data_t rx_data;
+
+static bool
+rmt_rx_done_callback (rmt_channel_handle_t channel, const rmt_rx_done_event_data_t * edata, void *user_data)
+{
+   BaseType_t high_task_wakeup = pdFALSE;
+   QueueHandle_t receive_queue = (QueueHandle_t) user_data;
+   xQueueSendFromISR (receive_queue, edata, &high_task_wakeup);
+   return high_task_wakeup == pdTRUE;
+}
+
+void
+ir_task (void *arg)
+{
+	revk_gpio_input(ir);
+   rmt_rx_channel_config_t rx_channel_cfg = {
+      .clk_src = RMT_CLK_SRC_DEFAULT,
+      .resolution_hz = 1000000,
+      .mem_block_symbols = sizeof (rmt_rx_symbols) / sizeof (*rmt_rx_symbols),
+      .gpio_num = ir.num,
+      .flags.invert_in = ir.invert,
+#ifdef	CONFIG_IDF_TARGET_ESP32S3
+      .flags.with_dma = 1,
+#endif
+   };
+   rmt_channel_handle_t rx_channel = NULL;
+   REVK_ERR_CHECK (rmt_new_rx_channel (&rx_channel_cfg, &rx_channel));
+
+   QueueHandle_t receive_queue = xQueueCreate (1, sizeof (rmt_rx_done_event_data_t));
+   rmt_rx_event_callbacks_t cbs = {
+      .on_recv_done = rmt_rx_done_callback,
+   };
+   REVK_ERR_CHECK (rmt_rx_register_event_callbacks (rx_channel, &cbs, receive_queue));
+
+   rmt_receive_config_t receive_config = {
+      .signal_range_min_ns = 1250,      // the shortest duration for NEC signal is 560us, 1250ns < 560us, valid signal won't be treated as noise
+      .signal_range_max_ns = 12000000,  // the longest duration for NEC signal is 9000us, 12000000ns > 9000us, the receive won't stop early
+   };
+
+   REVK_ERR_CHECK (rmt_enable (rx_channel));
+   REVK_ERR_CHECK (rmt_receive (rx_channel, rmt_rx_symbols, sizeof (rmt_rx_symbols), &receive_config));
+
+   while (1)
+   {
+      if (xQueueReceive (receive_queue, &rx_data, pdMS_TO_TICKS (1000)) == pdPASS)
+      {
+         ESP_LOGE (TAG, "Symbols %d", rx_data.num_symbols);
+
+
+      }
+   }
    vTaskDelete (NULL);
 }
 
@@ -1315,6 +1371,8 @@ app_main ()
       revk_task ("mic", mic_task, NULL, 8);
    if (sdss.set && sdmosi.set && sdmiso.set && sdsck.set)
       revk_task ("sd", sd_task, NULL, 16);
+   if (ir.set)
+      revk_task ("ir", ir_task, NULL, 4);
 
    if (*siphost)
       sip_register (siphost, sipuser, sippass, sip_callback, sipdebug ? sip_debug : NULL);

@@ -24,6 +24,7 @@ bit	sd.delete	1	.live=1	// Auto delete old files if space needed for new file
 gpio	button		-37		// Button
 gpio	charging	44		// Charging status
 gpio	vbus				// USB power status
+gpio	ir				// IR receiver
 
 gpio	rgb.status	35		// Status LED
 gpio	rgb.led		3	.old="ledrecord"	// Mic/record LED
