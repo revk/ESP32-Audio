@@ -15,8 +15,8 @@ bit	mic.beep		.live=1		// Add sync beep and red LED on start of recording
 gpio	sd.ss				// MicroSD SS
 gpio	sd.mosi				// MicroSD MOSI
 gpio	sd.sck				// MicroSD SCK
-gpio	sd.cd				// MicroSD CD
 gpio	sd.miso				// MicroSD MISO
+gpio	sd.cd				// MicroSD CD
 u32	sd.rectime	3600	.unit="s"	// Max record time per file
 s	sd.upload		.live=1	// Where to post, then delete, files on power off
 bit	sd.delete	1	.live=1	// Auto delete old files if space needed for new file
