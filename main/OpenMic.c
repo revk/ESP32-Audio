@@ -1449,7 +1449,7 @@ app_main ()
       }
       if (led_status)
       {
-         char c = revk_blinker ();
+         uint32_t c = revk_blinker ();
          revk_led (led_status, 0, 255, c);
          revk_led (led_status, 1, 255, c);      // TODO?
          REVK_ERR_CHECK (led_strip_refresh (led_status));
