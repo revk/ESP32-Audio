@@ -646,7 +646,7 @@ ir_task (void *arg)
       if (xQueueReceive (receive_queue, &rx_data, pdMS_TO_TICKS (1000)) == pdPASS)
       {
          ESP_LOGE (TAG, "Symbols %d", rx_data.num_symbols);
-	 // TODO decode
+         // TODO decode
 
          // Next
          REVK_ERR_CHECK (rmt_receive (rx_channel, rmt_rx_symbols, sizeof (rmt_rx_symbols), &receive_config));
@@ -1449,8 +1449,9 @@ app_main ()
       }
       if (led_status)
       {
-         revk_led (led_status, 0, 255, revk_blinker ());
-         revk_led (led_status, 1, 255, revk_blinker ());        // TODO two LED working?
+         char c = revk_blinker ();
+         revk_led (led_status, 0, 255, c);
+         revk_led (led_status, 1, 255, c);      // TODO?
          REVK_ERR_CHECK (led_strip_refresh (led_status));
       }
    }
