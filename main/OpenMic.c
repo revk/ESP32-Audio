@@ -209,7 +209,12 @@ send_ha_config (void)
 void
 revk_state_extra (jo_t j)
 {
-   jo_string (j, "record", b.micon ? "ON" : "OFF");
+   if (vbus.set)
+      jo_bool (j, "power", b.usb);
+   if (sdss.set)
+      jo_bool (j, "sdcard", b.sdpresent);
+   if (micws.set)
+      jo_string (j, "record", b.micon ? "ON" : "OFF");
 }
 
 void
