@@ -66,6 +66,8 @@ The format will depend on the source - the MAX98357A can handle 16, 24, or 32 bi
 
 ## Audio recorder
 
+<img src=https://github.com/user-attachments/assets/b2708de2-0341-4d64-8e58-601e501d9787 width=25% align=right>
+
 The main use of this software is as an *audio recorder*. This will record from the microphone(s) to a WAV file on the micro SD card. It allows a `button` GPIO to start/stop recording and power on/off. It allows for a separate WS2812 record status LED. The PCB design includes LiPo charging.
 
 Options are planned:-
