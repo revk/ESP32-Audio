@@ -1420,7 +1420,7 @@ app_main ()
       if (charging.set)
       {
          charge = (charge << 1) | revk_gpio_get (charging);
-         revk_blink (0, 0, charge == 0xFF ? "Y" : !charge ? "R" : "G");
+         revk_blink (0, 0, !usb ? "C" : charge == 0xFF ? "Y" : !charge ? "R" : "G");
       }
       if (revk_gpio_get (button))
       {                         // Pressed
