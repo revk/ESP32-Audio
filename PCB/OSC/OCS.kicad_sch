@@ -10564,7 +10564,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "https://datasheet.lcsc.com/lcsc/1811101814_Vishay-Intertech-VEML6040A3OG_C78465.pdf"
+		(property "Datasheet" "https://www.lcsc.com/datasheet/lcsc_datasheet_1811101814_Vishay-Intertech-VEML6040A3OG_C78465.pdf"
 			(at 160.02 158.75 0)
 			(effects
 				(font

@@ -1,33 +1,33 @@
-gpio	spk.pwr				// Speaker power on
-gpio	spk.lrc				// Speaker LR clock
-gpio	spk.bclk			// Speaker Bit clock
-gpio	spk.data			// Speaker Data
+gpio	spk.pwr		38		// Speaker power on
+gpio	spk.lrc		35		// Speaker LR clock
+gpio	spk.bclk	36		// Speaker Bit clock
+gpio	spk.data	37		// Speaker Data
 
-gpio	mic.data			// Microphone Data / SD
-gpio	mic.clock			// Microphone Clock / SCK
-gpio	mic.ws				// Microphone WS (not set for PDM)
+gpio	mic.data	7		// Microphone Data / SD
+gpio	mic.clock	5		// Microphone Clock / SCK
+gpio	mic.ws		6		// Microphone WS (not set for PDM)
 u32	mic.rate	44100 .unit="Hz",.live=1	// Microphone Input rate (when not SIP)
 u8	mic.gain	8	.live=1		// Microphone Multiply input (set 0 for 24 bit raw)
 bit	mic.stereo	1	.live=1		// Microphone Stereo
 bit	mic.right		.live=1		// Microphone use right channel
 bit	mic.beep		.live=1		// Add sync beep and red LED on start of recording
 
-gpio	sd.ss				// MicroSD SS
-gpio	sd.mosi				// MicroSD MOSI
-gpio	sd.sck				// MicroSD SCK
-gpio	sd.cd				// MicroSD CD
-gpio	sd.miso				// MicroSD MISO
+gpio	sd.ss		12		// MicroSD SS
+gpio	sd.mosi		13		// MicroSD MOSI
+gpio	sd.sck		14		// MicroSD SCK
+gpio	sd.cd		-17		// MicroSD CD
+gpio	sd.miso		15		// MicroSD MISO
 u32	sd.rectime	3600	.unit="s"	// Max record time per file
 s	sd.upload		.live=1	// Where to post, then delete, files on power off
 bit	sd.delete	1	.live=1	// Auto delete old files if space needed for new file
 
-gpio	button				// Button
-gpio	charging			// Charging status
-gpio	vbus				// USB power status
+gpio	button		-1		// Button
+gpio	charging	-18		// Charging status
+gpio	vbus		37		// USB power status
 gpio	ir				// IR receiver
 
-gpio	rgb.status			// Status LED
-gpio	rgb.led			.old="ledrecord"	// Mic/record LED
+gpio	rgb.status	39		// Status LED
+gpio	rgb.led		8	.old="ledrecord"	// Mic/record LED
 
 u32	morse.freq	600	.unit="Hz",.live=1		// Morse tone frequency
 u8	morse.level	50	.unit="%",.live=1		// Morse audio level 
