@@ -12,18 +12,35 @@ bit	mic.stereo	1	.live=1		// Microphone Stereo
 bit	mic.right		.live=1		// Microphone use right channel
 bit	mic.beep		.live=1		// Add sync beep and red LED on start of recording
 
+<<<<<<< HEAD
 gpio	sd.ss		12		// MicroSD SS
 gpio	sd.mosi		13		// MicroSD MOSI
 gpio	sd.sck		14		// MicroSD SCK
 gpio	sd.cd		-17		// MicroSD CD
 gpio	sd.miso		15		// MicroSD MISO
+=======
+gpio	sd.ss				// MicroSD SS
+gpio	sd.mosi				// MicroSD MOSI
+gpio	sd.sck				// MicroSD SCK
+gpio	sd.miso				// MicroSD MISO
+gpio	sd.cd				// MicroSD CD
+>>>>>>> 2f9862b49f34bead9455a149ffb3d8c9d9d797ea
 u32	sd.rectime	3600	.unit="s"	// Max record time per file
 s	sd.upload		.live=1	// Where to post, then delete, files on power off
 bit	sd.delete	1	.live=1	// Auto delete old files if space needed for new file
 
+<<<<<<< HEAD
 gpio	button		-1		// Button
 gpio	charging	-18		// Charging status
 gpio	vbus		37		// USB power status
+=======
+u32	auto.off	300	.unit="s",.live=1	// Auto power off if idle
+bit	auto.usb					// Auto off only if USB disconnected
+
+gpio	button				// Button
+gpio	charging			// Charging status
+gpio	vbus				// USB power status
+>>>>>>> 2f9862b49f34bead9455a149ffb3d8c9d9d797ea
 gpio	ir				// IR receiver
 
 gpio	rgb.status	39		// Status LED
