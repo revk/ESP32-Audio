@@ -121,6 +121,7 @@ struct
    uint8_t sharedi2s:1;         // I2S shared for Mic and Spk
    uint8_t ha:1;                // Send HA config
    uint8_t usb:1;               // USB connected
+   uint8_t overrun:1;           // Record overrun
 } b = { 0 };
 
 const char sd_mount[] = "/sd";
@@ -239,7 +240,12 @@ revk_web_extra (httpd_req_t * req, int page)
       revk_web_setting (req, NULL, "wifilock");
    }
    if (vbus.set)
+   {
       revk_web_setting (req, NULL, "wifiusb");
+      if (autooff)
+         revk_web_setting (req, NULL, "autousb");
+   }
+   revk_web_setting (req, NULL, "autooff");
    if (micws.set || spklrc.set)
    {
       revk_web_setting (req, NULL, "siphost");
@@ -663,6 +669,8 @@ ir_task (void *arg)
 void
 do_upload (void)
 {
+   revk_enable_wifi ();
+   revk_wait_wifi (30);
    while (1)
    {
       DIR *dir = opendir (sd_mount);
@@ -992,14 +1000,21 @@ mic_task (void *arg)
                   }
                }
                if ((sdin + 1) % MICQUEUE == sdout)
+               {
+                  if (!b.overrun)
+                  {
+                     b.overrun = 1;
+                     led ('R');
+                  }
                   ESP_LOGE (TAG, "Mic overflow");
-               else
+               } else
                   sdin = (sdin + 1) % MICQUEUE;
             }
             break;
          default:
          }
       }
+      b.overrun = 0;
       mic_mode = MIC_IDLE;
       i2s_channel_disable (mic_handle);
       free (raw);
@@ -1402,9 +1417,19 @@ app_main ()
    uint8_t press = 255;
    uint8_t charge = 0;
    uint8_t usb = 1;
+   uint32_t idle = 0;
    while (!b.die)
    {
       usleep (100000);
+      uint32_t up = uptime ();
+      if (autooff && !spk_mode && !mic_mode && (!usb || !autousb))
+      {                         // Idle
+         if (!idle)
+            idle = up + autooff;
+         else if (idle < up)
+            b.die = 1;
+      } else
+         idle = 0;
       if (b.ha)
          send_ha_config ();
       if (vbus.set)
@@ -1423,10 +1448,8 @@ app_main ()
          }
       }
       if (charging.set)
-      {
          charge = (charge << 1) | revk_gpio_get (charging);
-         revk_blink (0, 0, !usb ? "C" : charge == 0xFF ? "Y" : !charge ? "R" : "G");
-      }
+      revk_blink (0, 0, b.micon ? "K" : !usb ? "C" : charge == 0xFF ? "Y" : !charge ? "R" : "G");
       if (revk_gpio_get (button))
       {                         // Pressed
          if (press < 255)

@@ -21,6 +21,9 @@ u32	sd.rectime	3600	.unit="s"	// Max record time per file
 s	sd.upload		.live=1	// Where to post, then delete, files on power off
 bit	sd.delete	1	.live=1	// Auto delete old files if space needed for new file
 
+u32	auto.off	300	.unit="s",.live=1	// Auto power off if idle
+bit	auto.usb					// Auto off only if USB disconnected
+
 gpio	button				// Button
 gpio	charging			// Charging status
 gpio	vbus				// USB power status
