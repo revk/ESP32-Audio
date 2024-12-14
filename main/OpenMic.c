@@ -325,6 +325,8 @@ web_root (httpd_req_t * req)
       revk_web_send (req, "<p>%s</p>", er);
    if (wifilock && b.sdpresent)
       revk_web_send (req, "<hr><p>For security reasons, settings are disabled whilst the SD card is inserted</p>");
+   if (b.overrun)
+      revk_web_send (req, "<p>Recording overrun - use faster SD card</p>");
    return revk_web_foot (req, 0, 1, NULL);
 }
 
@@ -451,6 +453,9 @@ sd_task (void *arg)
       rgbsd = 'Y';              // Mounted, ready
       b.doformat = 0;
       uint32_t filesize = 0;
+      uint64_t writetime = 0;
+      uint64_t writebytes = 0;
+      char *filename = NULL;
       while (!b.doformat && !b.dodismount && !b.die)
       {
          while (!b.doformat && !b.dodismount)
@@ -464,7 +469,6 @@ sd_task (void *arg)
             if (mic_mode == MIC_RECORD && !sdfile)
             {                   // Start file
                filesize = sdrectime * micfreq * micchannels * micbytes;
-               char filename[260];
                int fileno = 0;
                char *oldest = NULL;
                DIR *dir = opendir (sd_mount);
@@ -493,9 +497,11 @@ sd_task (void *arg)
                      esp_vfs_fat_info (sd_mount, &sdsize, &sdfree);
                      if (sdfree < filesize + 44 + 4096)
                      {
-                        snprintf (filename, sizeof (filename), "%s/%s", sd_mount, oldest);
+                        asprintf (&filename, "%s/%s", sd_mount, oldest);
                         unlink (filename);
                         free (oldest);
+                        free (filename);
+                        filename = NULL;
                      }
                   }
                   closedir (dir);
@@ -505,10 +511,10 @@ sd_task (void *arg)
                struct tm t;
                localtime_r (&now, &t);
                if (t.tm_year >= 100)
-                  snprintf (filename, sizeof (filename), "%s/%04d-%04d%02d%02dT%02d%02d%02d.WAV", sd_mount, fileno,
-                            t.tm_year + 1900, t.tm_mon + 1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec);
+                  asprintf (&filename, "%s/%04d-%04d%02d%02dT%02d%02d%02d.WAV", sd_mount, fileno, t.tm_year + 1900, t.tm_mon + 1,
+                            t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec);
                else
-                  sprintf (filename, "%s/%04d-.WAV", sd_mount, fileno);
+                  asprintf (&filename, "%s/%04d-.WAV", sd_mount, fileno);
                FILE *o = fopen (filename, "w+");
                if (!o)
                   ESP_LOGE (TAG, "Failed to open file %s", filename);
@@ -548,6 +554,8 @@ sd_task (void *arg)
                   filesize += 44;
                   fwrite (&riff, sizeof (riff), 1, o);
                   sdfile = o;
+                  writetime = 0;
+                  writebytes = 0;
                }
             }
             if (sdfile && sdin == sdout && (mic_mode != MIC_RECORD || ftell (sdfile) >= filesize))
@@ -565,22 +573,48 @@ sd_task (void *arg)
                fseek (o, 4, SEEK_SET);
                fwrite (&len, 4, 1, o);
                fclose (o);
+               if (writetime)
+               {
+                  ESP_LOGE (TAG, "%llu bytes %llums (%llukB/sec) %s", writebytes, writetime / 1000ULL,
+                            writebytes * 1000ULL / writetime, filename);
+                  jo_t j = jo_object_alloc ();
+                  jo_string (j, "action", "Written");
+                  jo_string (j, "filename", filename);
+                  jo_int (j, "bytes", writebytes);
+                  jo_int (j, "ms", writetime / 1000ULL);
+                  if (b.overrun)
+                     jo_bool (j, "overrun", 1);
+                  revk_info ("SD", &j);
+               }
+               if (b.overrun)
+               {
+                  char *new = strdup (filename);
+                  char *dot = strstr (new, ".WAV");
+                  if (dot)
+                  {
+                     strcpy (dot, ".BAD");
+                     rename (filename, new);
+                  }
+                  free (new);
+               }
+               free (filename);
+               filename = NULL;
             }
             if (sdfile)
             {
                while (sdin != sdout)
                {
                   uint64_t a = esp_timer_get_time ();
-                  fwrite (micaudio[sdout], 1, micsamples * micchannels * micbytes, sdfile);
-                  uint64_t b = esp_timer_get_time ();
-                  if ((b - a) / 1000ULL >= MICMS)
-                     ESP_LOGE (TAG, "Wrote block %d, %ld bytes, %lldms", sdout, micsamples * micchannels * micbytes,
-                               (b - a) / 1000ULL);
+                  fwrite (micaudio[sdout], micsamples * micchannels * micbytes, 1, sdfile);
+                  writetime += esp_timer_get_time () - a;
+                  writebytes += micsamples * micchannels * micbytes;
                   sdout = (sdout + 1) % MICQUEUE;
                }
             }
             usleep (10000);
          }
+         free (filename);
+         filename = NULL;
          rgbsd = 'B';
          // All done, unmount partition and disable SPI peripheral
          esp_vfs_fat_sdcard_unmount (sd_mount, card);
@@ -867,7 +901,7 @@ mic_task (void *arg)
          micbytes = 2;
          micsamples = micfreq * MICMS / 1000;
          led (micbeep ? 'R' : 'G');
-         if (wifirecord && (!wifiusb || b.usb))
+         if (wifirecord && !wifiusb && !b.usb)
             revk_disable_wifi ();
       }
       for (int i = 0; i < MICQUEUE; i++)
@@ -940,6 +974,7 @@ mic_task (void *arg)
          beep = 1000 / MICMS + 1;
       ESP_LOGE (TAG, "Mic started mode %d, %ld*%d*%d bits at %ldHz - mapped to %d*%d bits", mode, micsamples, micchannels,
                 rawbytes * 8, micfreq, micchannels, micbytes * 8);
+      b.overrun = 0;
       while (!b.die && !(sip_mode <= SIP_REGISTERED && !b.micon))
       {
          if (beep && !--beep)
@@ -1014,7 +1049,6 @@ mic_task (void *arg)
          default:
          }
       }
-      b.overrun = 0;
       mic_mode = MIC_IDLE;
       i2s_channel_disable (mic_handle);
       free (raw);
@@ -1022,7 +1056,7 @@ mic_task (void *arg)
          free (micaudio[i]);
       i2s_del_channel (mic_handle);
       revk_enable_upgrade ();
-      if (wifirecord && (!wifiusb || b.usb))
+      if (wifirecord && !wifiusb && !b.usb)
          revk_enable_wifi ();
       ESP_LOGE (TAG, "Mic stopped");
    }
