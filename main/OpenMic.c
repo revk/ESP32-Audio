@@ -767,6 +767,7 @@ do_upload (void)
          free (filename);
          break;
       }
+      ESP_LOGE (TAG, "Upload %s", filename);
       char *u;
       asprintf (&u, "%s?%s-%s", sdupload, hostname, filename + sizeof (sd_mount));
       for (char *p = u + strlen (sdupload) + 1; *p; p++)
