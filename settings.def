@@ -17,7 +17,8 @@ gpio	sd.mosi				// MicroSD MOSI
 gpio	sd.sck				// MicroSD SCK
 gpio	sd.miso				// MicroSD MISO
 gpio	sd.cd				// MicroSD CD
-u32	sd.rectime	3600	.unit="s"	// Max record time per file
+u32	sd.rectime	3600	.unit="s"	// Max record time per whole file
+u32	sd.synctime	60	.unit="s"	// Max record time per file sync
 s	sd.upload		.live=1	// Where to post, then delete, files on power off
 bit	sd.delete	1	.live=1	// Auto delete old files if space needed for new file
 

@@ -349,7 +349,7 @@ sd_task (void *arg)
       .sclk_io_num = sdsck.num,
       .quadwp_io_num = -1,
       .quadhd_io_num = -1,
-      .max_transfer_sz = 4000,
+      //.max_transfer_sz = 4000,
    };
    e = spi_bus_initialize (host.slot, &bus_cfg, SDSPI_DEFAULT_DMA);
    if (e != ESP_OK)
@@ -452,9 +452,10 @@ sd_task (void *arg)
       }
       rgbsd = 'Y';              // Mounted, ready
       b.doformat = 0;
-      uint32_t filesize = 0;
-      uint64_t writetime = 0;
-      uint64_t writebytes = 0;
+      uint32_t writebytes = 0;  // Bytes of actual data written
+      uint32_t filesize = 0;    // End of file writebytes
+      uint32_t filesync = 0;    // Sync next writebytes
+      uint64_t writetime = 0;   // Total us writing
       char *filename = NULL;
       while (!b.doformat && !b.dodismount && !b.die)
       {
@@ -469,6 +470,7 @@ sd_task (void *arg)
             if (mic_mode == MIC_RECORD && !sdfile)
             {                   // Start file
                filesize = sdrectime * micfreq * micchannels * micbytes;
+               filesync = sdsynctime * micfreq * micchannels * micbytes;
                int fileno = 0;
                char *oldest = NULL;
                DIR *dir = opendir (sd_mount);
@@ -481,7 +483,7 @@ sd_task (void *arg)
                         if (!isdigit ((int) *(unsigned char *) (entry->d_name)))
                            continue;
                         const char *e = strrchr (entry->d_name, '.');
-                        if (!e || strcasecmp (e, ".wav"))
+                        if (!e || (strcasecmp (e, ".wav") && !strcasecmp (e, ".bad")))
                            continue;
                         int n = atoi (entry->d_name);
                         if (n > fileno)
@@ -520,7 +522,7 @@ sd_task (void *arg)
                   ESP_LOGE (TAG, "Failed to open file %s", filename);
                else
                {
-                  ESP_LOGI (TAG, "Recording opened %s", filename);
+                  ESP_LOGE (TAG, "Recording opened %s", filename);
                   struct
                   {
                      char filetypeblocid[4];
@@ -538,7 +540,7 @@ sd_task (void *arg)
                      uint32_t datasize;
                   } riff = {
                      "RIFF",    // Master
-                     36 + filesize,
+                     36 + filesync,
                      "WAVE",
                      "fmt ",    // Chunk
                      16,
@@ -549,56 +551,61 @@ sd_task (void *arg)
                      micchannels * micbytes,
                      micbytes * 8,      // bits
                      "data",    // Data block
-                     filesize,
+                     filesync,
                   };
-                  filesize += 44;
                   fwrite (&riff, sizeof (riff), 1, o);
                   sdfile = o;
                   writetime = 0;
                   writebytes = 0;
                }
             }
-            if (sdfile && sdin == sdout && (mic_mode != MIC_RECORD || ftell (sdfile) >= filesize))
+            if (sdfile && (mic_mode != MIC_RECORD || writebytes >= filesize || writebytes >= filesync))
             {                   // End file
-               ESP_LOGI (TAG, "Recording closed");
-               xSemaphoreTake (sd_mutex, portMAX_DELAY);
-               FILE *o = sdfile;
-               sdfile = NULL;
-               xSemaphoreGive (sd_mutex);
                // Rewind and set size
-               uint32_t len = ftell (o) - 44;   // Data len
-               fseek (o, 40, SEEK_SET);
-               fwrite (&len, 4, 1, o);
+               fflush (sdfile);
+               uint32_t len = writebytes;       // Data len
+               fseek (sdfile, 40, SEEK_SET);
+               fwrite (&len, 4, 1, sdfile);
                len += 36;
-               fseek (o, 4, SEEK_SET);
-               fwrite (&len, 4, 1, o);
-               fclose (o);
-               if (writetime)
-               {
-                  ESP_LOGE (TAG, "%llu bytes %llums (%llukB/sec) %s", writebytes, writetime / 1000ULL,
-                            writebytes * 1000ULL / writetime, filename);
-                  jo_t j = jo_object_alloc ();
-                  jo_string (j, "action", "Written");
-                  jo_string (j, "filename", filename);
-                  jo_int (j, "bytes", writebytes);
-                  jo_int (j, "ms", writetime / 1000ULL);
-                  if (b.overrun)
-                     jo_bool (j, "overrun", 1);
-                  revk_info ("SD", &j);
-               }
-               if (b.overrun)
-               {
-                  char *new = strdup (filename);
-                  char *dot = strstr (new, ".WAV");
-                  if (dot)
+               fseek (sdfile, 4, SEEK_SET);
+               fwrite (&len, 4, 1, sdfile);
+               fclose (sdfile);
+               sdfile = NULL;
+               if (mic_mode == MIC_RECORD && writebytes < filesize)
+               {                // Just a sync
+                  ESP_LOGE (TAG, "Sync %s", filename);
+                  filesync += sdsynctime * micfreq * micchannels * micbytes;
+                  sdfile = fopen (filename, "a+");
+               } else
+               {                // File sclose
+                  ESP_LOGE (TAG, "Recording closed %s", filename);
+                  if (writetime)
                   {
-                     strcpy (dot, ".BAD");
-                     rename (filename, new);
+                     ESP_LOGE (TAG, "%lu bytes %llums (%llukB/sec) %s", writebytes, writetime / 1000ULL,
+                               writebytes * 1000ULL / writetime, filename);
+                     jo_t j = jo_object_alloc ();
+                     jo_string (j, "action", "Written");
+                     jo_string (j, "filename", filename);
+                     jo_int (j, "bytes", writebytes);
+                     jo_int (j, "ms", writetime / 1000ULL);
+                     if (b.overrun)
+                        jo_bool (j, "overrun", 1);
+                     revk_info ("SD", &j);
                   }
-                  free (new);
+                  if (b.overrun)
+                  {             // Name
+                     char *new = strdup (filename);
+                     char *dot = strstr (new, ".WAV");
+                     if (dot)
+                     {
+                        strcpy (dot, ".BAD");
+                        rename (filename, new);
+                     }
+                     free (new);
+                  }
+                  free (filename);
+                  filename = NULL;
                }
-               free (filename);
-               filename = NULL;
             }
             if (sdfile)
             {
@@ -1481,6 +1488,8 @@ app_main ()
             }
          }
       }
+      if (revk_shutting_down (NULL) && b.micon)
+         b.micon = 0;
       if (charging.set)
          charge = (charge << 1) | revk_gpio_get (charging);
       revk_blink (0, 0, b.micon ? "K" : !usb ? "C" : charge == 0xFF ? "Y" : !charge ? "R" : "G");
