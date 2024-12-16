@@ -1525,7 +1525,7 @@ app_main ()
          REVK_ERR_CHECK (led_strip_refresh (led_status));
       }
    }
-   if (*sdupload, &&b.sdpresent)
+   if (*sdupload && b.sdpresent)
    {                            // Upload
       revk_led (led_status, 0, 255, revk_rgb ('B'));
       revk_led (led_status, 0, 255, revk_rgb ('K'));
