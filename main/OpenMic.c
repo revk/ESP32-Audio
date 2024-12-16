@@ -232,6 +232,7 @@ revk_web_extra (httpd_req_t * req, int page)
    {
       if (micws.set && rgbled.set)
          revk_web_setting (req, NULL, "micbeep");
+      revk_web_setting (req, NULL, "sdsynctime");
       revk_web_setting (req, NULL, "sdrectime");
       revk_web_setting (req, NULL, "sdupload");
       revk_web_setting (req, NULL, "sddelete");
@@ -541,7 +542,7 @@ sd_task (void *arg)
                      uint32_t datasize;
                   } riff = {
                      "RIFF",    // Master
-                     36 + filesync,
+                     36,        // Length zero
                      "WAVE",
                      "fmt ",    // Chunk
                      16,
@@ -552,7 +553,7 @@ sd_task (void *arg)
                      micchannels * micbytes,
                      micbytes * 8,      // bits
                      "data",    // Data block
-                     filesync,
+                     0,         // Length zero
                   };
                   fwrite (&riff, sizeof (riff), 1, o);
                   sdfile = o;
@@ -563,50 +564,55 @@ sd_task (void *arg)
             if (sdfile && (mic_mode != MIC_RECORD || writebytes >= filesize || writebytes >= filesync))
             {                   // End file
                // Rewind and set size
-               fflush (sdfile);
-               uint32_t len = writebytes;       // Data len
-               fseek (sdfile, 40, SEEK_SET);
-               fwrite (&len, 4, 1, sdfile);
-               len += 36;
-               fseek (sdfile, 4, SEEK_SET);
-               fwrite (&len, 4, 1, sdfile);
-               if (mic_mode == MIC_RECORD && writebytes < filesize)
-               {                // Just a sync
-                  ESP_LOGE (TAG, "Sync %s", filename);
-                  filesync += sdsynctime * micfreq * micchannels * micbytes;
-                  fclose (sdfile);
-                  sdfile = fopen (filename, "a+");
-               } else
-               {                // File sclose
-                  ESP_LOGE (TAG, "Recording closed %s", filename);
-                  fclose (sdfile);
-                  sdfile = NULL;
-                  if (writetime)
-                  {
-                     ESP_LOGE (TAG, "%lu bytes %llums (%llukB/sec) %s", writebytes, writetime / 1000ULL,
-                               writebytes * 1000ULL / writetime, filename);
-                     jo_t j = jo_object_alloc ();
-                     jo_string (j, "action", "Written");
-                     jo_string (j, "filename", filename);
-                     jo_int (j, "bytes", writebytes);
-                     jo_int (j, "ms", writetime / 1000ULL);
-                     if (b.overrun)
-                        jo_bool (j, "overrun", 1);
-                     revk_info ("SD", &j);
-                  }
-                  if (b.overrun)
-                  {             // Name
-                     char *new = strdup (filename);
-                     char *dot = strstr (new, ".WAV");
-                     if (dot)
+               fclose (sdfile);
+               sdfile = fopen (filename, "r+");
+               if (!sdfile)
+                  ESP_LOGE (TAG, "Error %s", filename);
+               else
+               {
+                  uint32_t len = writebytes;    // Data len
+                  fseek (sdfile, 40, SEEK_SET);
+                  fwrite (&len, 4, 1, sdfile);
+                  len += 36;
+                  fseek (sdfile, 4, SEEK_SET);
+                  fwrite (&len, 4, 1, sdfile);
+                  if (mic_mode == MIC_RECORD && writebytes < filesize)
+                  {             // Just a sync
+                     fseek (sdfile, 0, SEEK_END);
+                     ESP_LOGE (TAG, "Sync %s at %lu", filename, writebytes);
+                     filesync += sdsynctime * micfreq * micchannels * micbytes;
+                  } else
+                  {             // File sclose
+                     ESP_LOGE (TAG, "Recording closed %s at %lu", filename, writebytes);
+                     fclose (sdfile);
+                     sdfile = NULL;
+                     if (writetime)
                      {
-                        strcpy (dot, ".BAD");
-                        rename (filename, new);
+                        ESP_LOGE (TAG, "%lu bytes %llums (%llukB/sec) %s", writebytes, writetime / 1000ULL,
+                                  writebytes * 1000ULL / writetime, filename);
+                        jo_t j = jo_object_alloc ();
+                        jo_string (j, "action", "Written");
+                        jo_string (j, "filename", filename);
+                        jo_int (j, "bytes", writebytes);
+                        jo_int (j, "ms", writetime / 1000ULL);
+                        if (b.overrun)
+                           jo_bool (j, "overrun", 1);
+                        revk_info ("SD", &j);
                      }
-                     free (new);
+                     if (b.overrun)
+                     {          // Name
+                        char *new = strdup (filename);
+                        char *dot = strstr (new, ".WAV");
+                        if (dot)
+                        {
+                           strcpy (dot, ".BAD");
+                           rename (filename, new);
+                        }
+                        free (new);
+                     }
+                     free (filename);
+                     filename = NULL;
                   }
-                  free (filename);
-                  filename = NULL;
                }
             }
             if (sdfile && sdin != sdout)
@@ -767,7 +773,7 @@ do_upload (void)
          free (filename);
          break;
       }
-      ESP_LOGE (TAG, "Upload %s", filename);
+      ESP_LOGE (TAG, "Upload %s, %lu bytes", filename, s.st_size);
       char *u;
       asprintf (&u, "%s?%s-%s", sdupload, hostname, filename + sizeof (sd_mount));
       for (char *p = u + strlen (sdupload) + 1; *p; p++)
@@ -786,7 +792,6 @@ do_upload (void)
          if (client)
          {
             esp_http_client_set_header (client, "Content-Type", "audio/wav");
-            ESP_LOGI (TAG, "Sending %s %ld", filename, s.st_size);
             if (!esp_http_client_open (client, s.st_size))
             {                   // Send
                int total = 0;
@@ -912,6 +917,8 @@ mic_task (void *arg)
          if (wifirecord && !wifiusb && !b.usb)
             revk_disable_wifi ();
       }
+      b.overrun = 0;
+      sdin = sdout = 0;
       for (int i = 0; i < MICQUEUE; i++)
          micaudio[i] = mallocspi (micchannels * micbytes * micsamples);
       uint8_t *raw = NULL;
@@ -982,7 +989,6 @@ mic_task (void *arg)
          beep = 1000 / MICMS + 1;
       ESP_LOGE (TAG, "Mic started mode %d, %ld*%d*%d bits at %ldHz - mapped to %d*%d bits", mode, micsamples, micchannels,
                 rawbytes * 8, micfreq, micchannels, micbytes * 8);
-      b.overrun = 0;
       while (!b.die && !(sip_mode <= SIP_REGISTERED && !b.micon))
       {
          if (beep && !--beep)
