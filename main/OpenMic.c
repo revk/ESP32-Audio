@@ -710,8 +710,6 @@ ir_task (void *arg)
 void
 do_upload (void)
 {
-   revk_enable_wifi ();
-   revk_wait_wifi (30);
    while (1)
    {
       DIR *dir = opendir (sd_mount);
@@ -1523,13 +1521,16 @@ app_main ()
       {
          uint32_t c = revk_blinker ();
          revk_led (led_status, 0, 255, c);
-         revk_led (led_status, 1, 255, c);      // TODO?
+         revk_led (led_status, 1, 255, c);      // TODO something more useful??
          REVK_ERR_CHECK (led_strip_refresh (led_status));
       }
    }
-   if (*sdupload)
+   if (*sdupload, &&b.sdpresent)
    {                            // Upload
       revk_led (led_status, 0, 255, revk_rgb ('B'));
+      revk_led (led_status, 0, 255, revk_rgb ('K'));
+      revk_enable_wifi ();
+      revk_wait_wifi (10);
       revk_led (led_status, 1, 255, revk_rgb ('R'));
       REVK_ERR_CHECK (led_strip_refresh (led_status));
       do_upload ();
