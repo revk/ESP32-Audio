@@ -1530,7 +1530,7 @@ app_main ()
    if (*sdupload && b.sdpresent)
    {                            // Upload
       revk_led (led_status, 0, 255, revk_rgb ('B'));
-      revk_led (led_status, 0, 255, revk_rgb ('K'));
+      revk_led (led_status, 1, 255, revk_rgb ('K'));
       revk_enable_wifi ();
       revk_wait_wifi (10);
       revk_led (led_status, 1, 255, revk_rgb ('R'));
