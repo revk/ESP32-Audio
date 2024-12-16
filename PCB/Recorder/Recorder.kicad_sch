@@ -8927,7 +8927,7 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" "RevK:ICS43434_MEMS_Mic"
+		(property "Footprint" "RevK:ICS43434_MEMS_Mic_Open"
 			(at 216.916 42.545 0)
 			(effects
 				(font
@@ -12566,7 +12566,7 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" "RevK:ICS43434_MEMS_Mic"
+		(property "Footprint" "RevK:ICS43434_MEMS_Mic_Open"
 			(at 216.916 73.66 0)
 			(effects
 				(font
