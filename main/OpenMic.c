@@ -1531,6 +1531,7 @@ app_main ()
    {                            // Upload
       revk_led (led_status, 0, 255, revk_rgb ('B'));
       revk_led (led_status, 1, 255, revk_rgb ('K'));
+      REVK_ERR_CHECK (led_strip_refresh (led_status));
       revk_enable_wifi ();
       revk_wait_wifi (10);
       revk_led (led_status, 1, 255, revk_rgb ('R'));
