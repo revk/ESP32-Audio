@@ -500,6 +500,7 @@ sd_task (void *arg)
                      if (sdfree < filesize + 44 + 4096)
                      {
                         asprintf (&filename, "%s/%s", sd_mount, oldest);
+                        ESP_LOGE (TAG, "Purge %s", filename);
                         unlink (filename);
                         free (oldest);
                         free (filename);
@@ -522,7 +523,7 @@ sd_task (void *arg)
                   ESP_LOGE (TAG, "Failed to open file %s", filename);
                else
                {
-                  ESP_LOGE (TAG, "Recording opened %s", filename);
+                  ESP_LOGE (TAG, "Recording opened %s sync %lu max %lu", filename, filesync, filesize);
                   struct
                   {
                      char filetypeblocid[4];
@@ -569,16 +570,17 @@ sd_task (void *arg)
                len += 36;
                fseek (sdfile, 4, SEEK_SET);
                fwrite (&len, 4, 1, sdfile);
-               fclose (sdfile);
-               sdfile = NULL;
                if (mic_mode == MIC_RECORD && writebytes < filesize)
                {                // Just a sync
                   ESP_LOGE (TAG, "Sync %s", filename);
                   filesync += sdsynctime * micfreq * micchannels * micbytes;
+                  fclose (sdfile);
                   sdfile = fopen (filename, "a+");
                } else
                {                // File sclose
                   ESP_LOGE (TAG, "Recording closed %s", filename);
+                  fclose (sdfile);
+                  sdfile = NULL;
                   if (writetime)
                   {
                      ESP_LOGE (TAG, "%lu bytes %llums (%llukB/sec) %s", writebytes, writetime / 1000ULL,
