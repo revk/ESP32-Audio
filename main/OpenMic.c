@@ -609,7 +609,7 @@ sd_task (void *arg)
                   filename = NULL;
                }
             }
-            if (sdfile)
+            if (sdfile && sdin != sdout)
             {
                while (sdin != sdout)
                {
