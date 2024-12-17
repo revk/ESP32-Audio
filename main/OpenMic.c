@@ -459,7 +459,7 @@ sd_task (void *arg)
       }
       ESP_LOGE (TAG, "SD Card mounted");
       b.sdpresent = 1;          // we mounted, so must be
-      rgbsd = 'G';              // Writing to card
+      rgbsd = 'G';              // Writing to card (typically gets overridden)
       if (b.doformat)
       {
 #ifdef	SDSPI
@@ -955,7 +955,7 @@ mic_task (void *arg)
          micchannels = (micstereo ? 2 : 1);
          micbytes = 2;
          micsamples = micfreq * MICMS / 1000;
-         led (micbeep ? 'R' : 'G');
+         led (micbeep ? 'R' : dark ? 'K' : 'G');
          if (wifirecord)
             revk_disable_wifi ();
       }
@@ -1034,7 +1034,7 @@ mic_task (void *arg)
       while (!b.die && !(sip_mode <= SIP_REGISTERED && !b.micon))
       {
          if (beep && !--beep)
-            led ('G');
+            led (dark ? 'K' : 'G');
          size_t n = 0;
          i2s_channel_read (mic_handle, raw ? : micaudio[sdin], micchannels * rawbytes * micsamples, &n, MICMS * 2);
          if (n < micchannels * rawbytes * micsamples)
