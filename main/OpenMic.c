@@ -955,7 +955,7 @@ mic_task (void *arg)
          micchannels = (micstereo ? 2 : 1);
          micbytes = 2;
          micsamples = micfreq * MICMS / 1000;
-         led (micbeep ? 'R' : dark ? 'K' : 'G');
+         led (micbeep ? 'O' : dark ? 'K' : 'G');
          if (wifirecord)
             revk_disable_wifi ();
       }
