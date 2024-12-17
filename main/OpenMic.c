@@ -436,7 +436,7 @@ sd_task (void *arg)
          continue;
       }
       sleep (1);
-      ESP_LOGD (TAG, "Mounting filesystem");
+      ESP_LOGD (TAG, "Mounting SD card");
 #ifdef	SDSPI
       e = esp_vfs_fat_sdspi_mount (sd_mount, &host, &slot, &mount_config, &card);
 #else
@@ -444,7 +444,7 @@ sd_task (void *arg)
 #endif
       if (e != ESP_OK)
       {
-         ESP_LOGE (TAG, "Mounting failed");
+         ESP_LOGE (TAG, "SD Mount failed");
          jo_t j = jo_object_alloc ();
          if (e == ESP_FAIL)
             jo_string (j, "error", cardstatus = "Failed to mount");
@@ -456,7 +456,7 @@ sd_task (void *arg)
          sleep (1);
          continue;
       }
-      ESP_LOGE (TAG, "Filesystem mounted");
+      ESP_LOGE (TAG, "SD Card mounted");
       b.sdpresent = 1;          // we mounted, so must be
       rgbsd = 'G';              // Writing to card
 #ifndef	SDSPI                   // TODO
@@ -659,7 +659,7 @@ sd_task (void *arg)
          rgbsd = 'B';
          // All done, unmount partition and disable SPI peripheral
          esp_vfs_fat_sdcard_unmount (sd_mount, card);
-         ESP_LOGI (TAG, "Card dismounted");
+         ESP_LOGE (TAG, "SD Card dismounted");
          {
             jo_t j = jo_object_alloc ();
             jo_string (j, "action", cardstatus = "Dismounted");
