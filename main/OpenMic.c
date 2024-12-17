@@ -14,6 +14,7 @@ static const char TAG[] = "OpenMic";
 #include <driver/i2s_pdm.h>
 #include <driver/rtc_io.h>
 #include <driver/rmt_rx.h>
+#include <driver/sdmmc_host.h>
 #include "esp_http_client.h"
 #include <esp_http_server.h>
 #include "esp_crt_bundle.h"
@@ -124,6 +125,7 @@ struct
    uint8_t overrun:1;           // Record overrun
 } b = { 0 };
 
+#define       SDSPI
 const char sd_mount[] = "/sd";
 char rgbsd = 0;                 // Colour for SD card
 const char *cardstatus = NULL;  // Status of SD card
@@ -212,7 +214,7 @@ revk_state_extra (jo_t j)
 {
    if (vbus.set)
       jo_bool (j, "power", b.usb);
-   if (sdss.set)
+   if (sdcmd.set)
       jo_bool (j, "sdcard", b.sdpresent);
    if (micws.set)
       jo_string (j, "record", b.micon ? "ON" : "OFF");
@@ -228,7 +230,7 @@ revk_web_extra (httpd_req_t * req, int page)
       if (!micstereo)
          revk_web_setting (req, NULL, "micright");
    }
-   if (sdss.set)
+   if (sdcmd.set)
    {
       if (micws.set && rgbled.set)
          revk_web_setting (req, NULL, "micbeep");
@@ -338,16 +340,18 @@ sd_task (void *arg)
 {
    esp_err_t e = 0;
    revk_gpio_input (sdcd);
-   sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT ();
-   slot_config.gpio_cs = -1;    // don't use SS pin
-   revk_gpio_output (sdss, 0);  // We assume only one card
+#ifdef	SDSPI
+   // SPI mode
+   sdspi_device_config_t slot = SDSPI_DEVICE_CONFIG_DEFAULT ();
+   slot.gpio_cs = -1;    // don't use SS pin
+   revk_gpio_output (sddat3, 0);        // We assume only one card
    sdmmc_host_t host = SDSPI_HOST_DEFAULT ();
    //host.max_freq_khz = SDMMC_FREQ_PROBING;
    host.max_freq_khz = 20000;;
    spi_bus_config_t bus_cfg = {
-      .mosi_io_num = sdmosi.num,
-      .miso_io_num = sdmiso.num,
-      .sclk_io_num = sdsck.num,
+      .mosi_io_num = sdcmd.num,
+      .miso_io_num = sddat0.num,
+      .sclk_io_num = sdclk.num,
       .quadwp_io_num = -1,
       .quadhd_io_num = -1,
       //.max_transfer_sz = 4000,
@@ -359,14 +363,30 @@ sd_task (void *arg)
       jo_t j = jo_object_alloc ();
       jo_string (j, "error", cardstatus = "SPI failed");
       jo_int (j, "code", e);
-      jo_int (j, "MOSI", sdmosi.num);
-      jo_int (j, "MISO", sdmiso.num);
-      jo_int (j, "CLK", sdsck.num);
-      jo_int (j, "SS", sdss.num);
+      jo_int (j, "MOSI", sdcmd.num);
+      jo_int (j, "MISO", sddat0.num);
+      jo_int (j, "CLK", sdclk.num);
+      jo_int (j, "SS", sddat3.num);
       revk_error ("SD", &j);
       vTaskDelete (NULL);
       return;
    }
+   slot.host_id = host.slot;
+#else
+   sdmmc_slot_config_t slot = SDMMC_SLOT_CONFIG_DEFAULT ();
+   slot.clk = sdclk.num;
+   slot.cmd = sdcmd.num;
+   slot.d0 = sddat0.num;
+   slot.d1 = sddat1.set ? sddat1.num : -1;
+   slot.d2 = sddat2.set ? sddat2.num : -1;
+   slot.d3 = sddat3.set ? sddat3.num : -1;
+   //slot.cd = sdcd.set ? sdcd.num : -1;
+   slot.width=(sddat2.set && sddat3.set ? 4 : sddat1.set ? 2 : 1);
+   //slot.flags |= SDMMC_SLOT_FLAG_INTERNAL_PULLUP; // TODO, old boards?
+   sdmmc_host_t host = SDMMC_HOST_DEFAULT ();
+   host.max_freq_khz = SDMMC_FREQ_HIGHSPEED;
+   host.slot = SDMMC_HOST_SLOT_0;
+#endif
    esp_vfs_fat_sdmmc_mount_config_t mount_config = {
       .format_if_mount_failed = 1,
       .max_files = 2,
@@ -374,7 +394,6 @@ sd_task (void *arg)
       .disk_status_check_enable = 1,
    };
    sdmmc_card_t *card = NULL;
-   slot_config.host_id = host.slot;
    while (!b.die)
    {
       if (sdcd.set)
@@ -418,7 +437,11 @@ sd_task (void *arg)
       }
       sleep (1);
       ESP_LOGI (TAG, "Mounting filesystem");
-      e = esp_vfs_fat_sdspi_mount (sd_mount, &host, &slot_config, &mount_config, &card);
+#ifdef	SDSPI
+      e = esp_vfs_fat_sdspi_mount (sd_mount, &host, &slot, &mount_config, &card);
+#else
+      e = esp_vfs_fat_sdmmc_mount (sd_mount, &host, &slot, &mount_config, &card);
+#endif
       if (e != ESP_OK)
       {
          jo_t j = jo_object_alloc ();
@@ -641,9 +664,9 @@ sd_task (void *arg)
          }
       }
    }
-   revk_gpio_set (sdss, 1);
-   rtc_gpio_set_direction_in_sleep (sdss.num, RTC_GPIO_MODE_OUTPUT_ONLY);
-   rtc_gpio_set_level (sdss.num, 1 - sdss.invert);
+   revk_gpio_set (sddat3, 1);
+   rtc_gpio_set_direction_in_sleep (sddat3.num, RTC_GPIO_MODE_OUTPUT_ONLY);
+   rtc_gpio_set_level (sddat3.num, 1 - sddat3.invert);
    vTaskDelete (NULL);
 }
 
@@ -1369,7 +1392,7 @@ spk_task (void *arg)
       }
    }
    rtc_gpio_set_direction_in_sleep (spkpwr.num, RTC_GPIO_MODE_OUTPUT_ONLY);
-   rtc_gpio_set_level (spkpwr.num, sdss.invert);
+   rtc_gpio_set_level (spkpwr.num, sddat3.invert);
    vTaskDelete (NULL);
 }
 
@@ -1450,7 +1473,7 @@ app_main ()
       revk_task ("spk", spk_task, NULL, 8);
    if (micdata.set && micclock.set)
       revk_task ("mic", mic_task, NULL, 8);
-   if (sdss.set && sdmosi.set && sdmiso.set && sdsck.set)
+   if (sdcmd.set && sddat0.set && sdclk.set)
       revk_task ("sd", sd_task, NULL, 16);
    if (ir.set)
       revk_task ("ir", ir_task, NULL, 4);

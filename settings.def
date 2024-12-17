@@ -12,11 +12,14 @@ bit	mic.stereo	1	.live=1		// Microphone Stereo
 bit	mic.right		.live=1		// Microphone use right channel
 bit	mic.beep		.live=1		// Add sync beep and red LED on start of recording
 
-gpio	sd.ss				// MicroSD SS
-gpio	sd.mosi				// MicroSD MOSI
-gpio	sd.sck				// MicroSD SCK
-gpio	sd.miso				// MicroSD MISO
+gpio	sd.dat2				// MicroSD DAT2
+gpio	sd.dat3		.old="sdss"	// MicroSD DAT3
+gpio	sd.cmd		.old="sdmosi"	// MicroSD CMD
+gpio	sd.clk		.old="sdsck"	// MicroSD CLK
+gpio	sd.dat0		.old="sdmiso"	// MicroSD DAT0
+gpio	sd.dat1				// MicroSD DAT1
 gpio	sd.cd				// MicroSD CD
+
 u32	sd.rectime	3600	.unit="s"	// Max record time per whole file
 u32	sd.synctime	60	.unit="s"	// Max record time per file sync
 s	sd.upload		.live=1	// Where to post, then delete, files on power off
