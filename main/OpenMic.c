@@ -380,9 +380,10 @@ sd_task (void *arg)
    slot.d1 = sddat1.set ? sddat1.num : -1;
    slot.d2 = sddat2.set ? sddat2.num : -1;
    slot.d3 = sddat3.set ? sddat3.num : -1;
-   //slot.cd = sdcd.set ? sdcd.num : -1;
+   //slot.cd = sdcd.set ? sdcd.num : -1; // We do CD, and not sure how we would tell it polarity
    slot.width = (sddat2.set && sddat3.set ? 4 : sddat1.set ? 2 : 1);
-   //slot.flags |= SDMMC_SLOT_FLAG_INTERNAL_PULLUP; // TODO, old boards?
+   if (slot.width == 1)
+      slot.flags |= SDMMC_SLOT_FLAG_INTERNAL_PULLUP;    // Old boards?
    sdmmc_host_t host = SDMMC_HOST_DEFAULT ();
    host.max_freq_khz = SDMMC_FREQ_HIGHSPEED;
    host.slot = SDMMC_HOST_SLOT_1;
@@ -459,15 +460,22 @@ sd_task (void *arg)
       ESP_LOGE (TAG, "SD Card mounted");
       b.sdpresent = 1;          // we mounted, so must be
       rgbsd = 'G';              // Writing to card
-#ifndef	SDSPI                   // TODO
-      if (b.doformat && (e = esp_vfs_fat_spiflash_format_rw_wl (sd_mount, "OpenMic")))
+      if (b.doformat)
       {
-         jo_t j = jo_object_alloc ();
-         jo_string (j, "error", cardstatus = "Failed to format");
-         jo_int (j, "code", e);
-         revk_error ("SD", &j);
-      }
+#ifdef	SDSPI
+         if ((e = esp_vfs_fat_spiflash_format_rw_wl (sd_mount, "OpenMic")))
+#else
+         if ((e = esp_vfs_fat_sdcard_format (sd_mount, card)))
 #endif
+         {
+            ESP_LOGE (TAG, "SD format failed");
+            jo_t j = jo_object_alloc ();
+            jo_string (j, "error", cardstatus = "Failed to format");
+            jo_int (j, "code", e);
+            revk_error ("SD", &j);
+         } else
+            ESP_LOGE (TAG, "SD formatted");
+      }
       rgbsd = 'R';              // Oddly this call can hang forever!
       {
          esp_vfs_fat_info (sd_mount, &sdsize, &sdfree);
