@@ -125,7 +125,7 @@ struct
    uint8_t overrun:1;           // Record overrun
 } b = { 0 };
 
-//#define       SDSPI		// TODO use SPI mode
+//#define       SDSPI           // TODO use SPI mode
 const char sd_mount[] = "/sd";
 char rgbsd = 0;                 // Colour for SD card
 const char *cardstatus = NULL;  // Status of SD card
@@ -614,7 +614,7 @@ sd_task (void *arg)
                      sdfile = NULL;
                      if (writetime)
                      {
-                        ESP_LOGE (TAG, "%lu bytes %llums (%llukB/sec) %s", writebytes, writetime / 1000ULL,
+                        ESP_LOGE (TAG, "SD access: %lu bytes %llums (%llukB/sec) %s", writebytes, writetime / 1000ULL,
                                   writebytes * 1000ULL / writetime, filename);
                         jo_t j = jo_object_alloc ();
                         jo_string (j, "action", "Written");
@@ -819,11 +819,17 @@ do_upload (void)
          {
             esp_http_client_set_header (client, "Content-Type", "audio/wav");
             if (!esp_http_client_open (client, s.st_size))
-            {                   // Send
-               int total = 0;
-               int len = 0;
-               while ((len = fread (buf, 1, BLOCK, i)) > 0)
+            {
+               int len;
+               uint32_t total = 0;
+               uint64_t t = 0;
+               while (1)
                {
+                  uint64_t a = esp_timer_get_time ();
+                  len = fread (buf, 1, BLOCK, i);
+                  t += esp_timer_get_time () - a;
+                  if (len <= 0)
+                     break;
                   total += len;
                   esp_http_client_write (client, buf, len);
                }
@@ -831,6 +837,9 @@ do_upload (void)
                esp_http_client_flush_response (client, &len);
                response = esp_http_client_get_status_code (client);
                esp_http_client_close (client);
+               if (t)
+                  ESP_LOGE (TAG, "Sent %lu bytes, SD access %llums (%llukB/sec) %s", total, t / 1000ULL, total * 1000ULL / t,
+                            filename);
             }
             esp_http_client_cleanup (client);
          }
@@ -838,7 +847,6 @@ do_upload (void)
       free (u);
       free (buf);
 #undef	BLOCK
-      ESP_LOGI (TAG, "Sent, Response %d", response);
       if (response / 100 == 2)
       {
          char *new = strdup (filename);
