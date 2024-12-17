@@ -239,8 +239,8 @@ revk_web_extra (httpd_req_t * req, int page)
       revk_web_setting (req, NULL, "sdupload");
       revk_web_setting (req, NULL, "sddelete");
       revk_web_setting (req, NULL, "haenable");
-      revk_web_setting (req, NULL, "wifirecord");
       revk_web_setting (req, NULL, "wifilock");
+      revk_web_setting (req, NULL, "wifirecord");
    }
    if (vbus.set)
    {
@@ -956,7 +956,7 @@ mic_task (void *arg)
          micbytes = 2;
          micsamples = micfreq * MICMS / 1000;
          led (micbeep ? 'R' : 'G');
-         if (wifirecord && !wifiusb && !b.usb)
+         if (wifirecord)
             revk_disable_wifi ();
       }
       b.overrun = 0;
@@ -1112,7 +1112,7 @@ mic_task (void *arg)
          free (micaudio[i]);
       i2s_del_channel (mic_handle);
       revk_enable_upgrade ();
-      if (wifirecord && !wifiusb && !b.usb)
+      if (wifirecord && (!wifiusb || b.usb))
          revk_enable_wifi ();
       ESP_LOGE (TAG, "Mic stopped");
    }
@@ -1496,10 +1496,8 @@ app_main ()
       revk_task ("sd", sd_task, NULL, 16);
    if (ir.set)
       revk_task ("ir", ir_task, NULL, 4);
-
    if (*siphost)
       sip_register (siphost, sipuser, sippass, sip_callback, sipdebug ? sip_debug : NULL);
-
    // Buttons and LEDs
    revk_gpio_input (button);
    revk_gpio_input (charging);  // On, off, or flashing
