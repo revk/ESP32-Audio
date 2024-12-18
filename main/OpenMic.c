@@ -125,8 +125,6 @@ struct
    uint8_t overrun:1;           // Record overrun
 } b = { 0 };
 
-volatile uint32_t idle = 0;
-
 const char sd_mount[] = "/sd";
 char sdrgb = 0;                 // Colour for SD card
 const char *cardstatus = NULL;  // Status of SD card
@@ -154,6 +152,7 @@ uint32_t spkfreq = 0;           // Actual sample rate
 
 volatile uint8_t sdin = 0,
    sdout = 0;
+volatile uint32_t idle = 0;
 
 static httpd_handle_t webserver = NULL;
 
