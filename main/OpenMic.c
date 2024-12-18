@@ -1525,8 +1525,15 @@ app_main ()
       if (led_status)
       {
          uint32_t c = revk_blinker ();
-         revk_led (led_status, 0, 255, revk_rgb (b.micon ? 'K' : !usb ? 'C' : charge == 0xFF ? 'Y' : !charge ? 'R' : 'G'));
-         revk_led (led_status, 1, 255, b.micon?0:c);
+         if (mic_mode == MIC_RECORD)
+         {                      // recording
+            revk_led (led_status, 0, 16, revk_rgb ('B'));
+            revk_led (led_status, 1, 16, revk_rgb ('B'));
+         } else
+         {
+            revk_led (led_status, 0, 255, revk_rgb (!usb ? 'C' : charge == 0xFF ? 'Y' : !charge ? 'R' : 'G'));
+            revk_led (led_status, 1, 255, c);
+         }
          REVK_ERR_CHECK (led_strip_refresh (led_status));
       }
    }
