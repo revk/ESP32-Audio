@@ -125,7 +125,6 @@ struct
    uint8_t overrun:1;           // Record overrun
 } b = { 0 };
 
-//#define       SDSPI           // TODO use SPI mode
 const char sd_mount[] = "/sd";
 char rgbsd = 0;                 // Colour for SD card
 const char *cardstatus = NULL;  // Status of SD card
@@ -340,39 +339,6 @@ sd_task (void *arg)
 {
    esp_err_t e = 0;
    revk_gpio_input (sdcd);
-#ifdef	SDSPI
-   // SPI mode
-   sdspi_device_config_t slot = SDSPI_DEVICE_CONFIG_DEFAULT ();
-   slot.gpio_cs = -1;           // don't use SS pin
-   revk_gpio_output (sddat3, 0);        // We assume only one card
-   sdmmc_host_t host = SDSPI_HOST_DEFAULT ();
-   //host.max_freq_khz = SDMMC_FREQ_PROBING;
-   host.max_freq_khz = 20000;;
-   spi_bus_config_t bus_cfg = {
-      .mosi_io_num = sdcmd.num,
-      .miso_io_num = sddat0.num,
-      .sclk_io_num = sdclk.num,
-      .quadwp_io_num = -1,
-      .quadhd_io_num = -1,
-      //.max_transfer_sz = 4000,
-   };
-   e = spi_bus_initialize (host.slot, &bus_cfg, SDSPI_DEFAULT_DMA);
-   if (e != ESP_OK)
-   {
-      rgbsd = 'R';
-      jo_t j = jo_object_alloc ();
-      jo_string (j, "error", cardstatus = "SPI failed");
-      jo_int (j, "code", e);
-      jo_int (j, "MOSI", sdcmd.num);
-      jo_int (j, "MISO", sddat0.num);
-      jo_int (j, "CLK", sdclk.num);
-      jo_int (j, "SS", sddat3.num);
-      revk_error ("SD", &j);
-      vTaskDelete (NULL);
-      return;
-   }
-   slot.host_id = host.slot;
-#else
    sdmmc_slot_config_t slot = SDMMC_SLOT_CONFIG_DEFAULT ();
    slot.clk = sdclk.num;
    slot.cmd = sdcmd.num;
@@ -387,7 +353,6 @@ sd_task (void *arg)
    sdmmc_host_t host = SDMMC_HOST_DEFAULT ();
    host.max_freq_khz = SDMMC_FREQ_HIGHSPEED;
    host.slot = SDMMC_HOST_SLOT_1;
-#endif
    esp_vfs_fat_sdmmc_mount_config_t mount_config = {
       .format_if_mount_failed = 1,
       .max_files = 2,
@@ -438,11 +403,7 @@ sd_task (void *arg)
       }
       sleep (1);
       ESP_LOGD (TAG, "Mounting SD card");
-#ifdef	SDSPI
-      e = esp_vfs_fat_sdspi_mount (sd_mount, &host, &slot, &mount_config, &card);
-#else
       e = esp_vfs_fat_sdmmc_mount (sd_mount, &host, &slot, &mount_config, &card);
-#endif
       if (e != ESP_OK)
       {
          ESP_LOGE (TAG, "SD Mount failed");
@@ -462,11 +423,7 @@ sd_task (void *arg)
       rgbsd = 'G';              // Writing to card (typically gets overridden)
       if (b.doformat)
       {
-#ifdef	SDSPI
-         if ((e = esp_vfs_fat_spiflash_format_rw_wl (sd_mount, "OpenMic")))
-#else
          if ((e = esp_vfs_fat_sdcard_format (sd_mount, card)))
-#endif
          {
             ESP_LOGE (TAG, "SD format failed");
             jo_t j = jo_object_alloc ();
