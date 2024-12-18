@@ -1531,7 +1531,7 @@ app_main ()
             revk_led (led_status, 1, 16, revk_rgb ('B'));
          } else
          {
-            revk_led (led_status, 0, 255, revk_rgb (!usb ? 'C' : charge == 0xFF ? 'Y' : !charge ? 'R' : 'G'));
+            revk_led (led_status, 0, 255, revk_rgb (!usb ? 'C' : charge == 0xFF ? 'Y' : charge ? 'R' : 'G'));
             revk_led (led_status, 1, 255, c);
          }
          REVK_ERR_CHECK (led_strip_refresh (led_status));
