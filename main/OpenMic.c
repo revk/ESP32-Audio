@@ -1525,8 +1525,8 @@ app_main ()
       if (led_status)
       {
          uint32_t c = revk_blinker ();
-         revk_led (led_status, 0, 255, c);
-         revk_led (led_status, 1, 255, revk_rgb (b.micon ? 'K' : !usb ? 'C' : charge == 0xFF ? 'Y' : !charge ? 'R' : 'G'));
+         revk_led (led_status, 0, 255, revk_rgb (b.micon ? 'K' : !usb ? 'C' : charge == 0xFF ? 'Y' : !charge ? 'R' : 'G'));
+         revk_led (led_status, 1, 255, b.micon?0:c);
          REVK_ERR_CHECK (led_strip_refresh (led_status));
       }
    }
