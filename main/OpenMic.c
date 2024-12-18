@@ -125,8 +125,10 @@ struct
    uint8_t overrun:1;           // Record overrun
 } b = { 0 };
 
+volatile uint32_t idle = 0;
+
 const char sd_mount[] = "/sd";
-char rgbsd = 0;                 // Colour for SD card
+char sdrgb = 0;                 // Colour for SD card
 const char *cardstatus = NULL;  // Status of SD card
 uint64_t sdsize = 0,            // SD card data
    sdfree = 0;
@@ -296,6 +298,7 @@ register_get_uri (const char *uri, esp_err_t (*handler) (httpd_req_t * r))
 static esp_err_t
 web_root (httpd_req_t * req)
 {
+   idle = 0;
    if (revk_link_down ())
       return revk_web_settings (req);   // Direct to web set up
    revk_web_head (req, "OpenMic");
@@ -366,7 +369,7 @@ sd_task (void *arg)
       {
          if (b.dodismount)
          {                      // Waiting card removed
-            rgbsd = 'B';
+            sdrgb = 'B';
             jo_t j = jo_object_alloc ();
             jo_string (j, "action", cardstatus = revk_shutting_down (NULL) ? "Card dismounted for shutdown" : "Remove card");
             revk_info ("SD", &j);
@@ -380,7 +383,7 @@ sd_task (void *arg)
             jo_t j = jo_object_alloc ();
             jo_string (j, "error", cardstatus = "Card not present");
             revk_info ("SD", &j);
-            rgbsd = 'M';
+            sdrgb = 'M';
             if (wifilock)
             {
                revk_enable_ap ();
@@ -414,13 +417,13 @@ sd_task (void *arg)
             jo_string (j, "error", cardstatus = "Failed to iniitialise");
          jo_int (j, "code", e);
          revk_error ("SD", &j);
-         rgbsd = 'R';
+         sdrgb = 'R';
          sleep (1);
          continue;
       }
       ESP_LOGE (TAG, "SD Card mounted");
       b.sdpresent = 1;          // we mounted, so must be
-      rgbsd = 'G';              // Writing to card (typically gets overridden)
+      sdrgb = 'G';              // Writing to card (typically gets overridden)
       if (b.doformat)
       {
          if ((e = esp_vfs_fat_sdcard_format (sd_mount, card)))
@@ -433,7 +436,7 @@ sd_task (void *arg)
          } else
             ESP_LOGE (TAG, "SD formatted");
       }
-      rgbsd = 'R';              // Oddly this call can hang forever!
+      sdrgb = 'R';              // Oddly this call can hang forever!
       {
          esp_vfs_fat_info (sd_mount, &sdsize, &sdfree);
          jo_t j = jo_object_alloc ();
@@ -442,7 +445,7 @@ sd_task (void *arg)
          jo_int (j, "free", sdfree);
          revk_info ("SD", &j);
       }
-      rgbsd = 'Y';              // Mounted, ready
+      sdrgb = 'Y';              // Mounted, ready
       b.doformat = 0;
       uint32_t writebytes = 0;  // Bytes of actual data written
       uint32_t filesize = 0;    // End of file writebytes
@@ -453,7 +456,7 @@ sd_task (void *arg)
       {
          while (!b.doformat && !b.dodismount)
          {
-            rgbsd = (sdfile ? 'G' : 'Y');
+            sdrgb = (sdfile ? 'G' : 'Y');
             if (!(b.sdpresent = revk_gpio_get (sdcd)))
             {                   // card removed
                b.dodismount = 1;
@@ -621,7 +624,7 @@ sd_task (void *arg)
          }
          free (filename);
          filename = NULL;
-         rgbsd = 'B';
+         sdrgb = 'B';
          // All done, unmount partition and disable SPI peripheral
          esp_vfs_fat_sdcard_unmount (sd_mount, card);
          ESP_LOGE (TAG, "SD Card dismounted");
@@ -887,7 +890,7 @@ mic_task (void *arg)
          mode = MIC_RECORD;
       if (!mode)
       {
-         led (rgbsd);
+         led (sdrgb);
          usleep (100000);
          continue;
       }
@@ -1462,7 +1465,6 @@ app_main ()
    uint8_t press = 255;
    uint8_t charge = 0;
    uint8_t usb = 1;
-   uint32_t idle = 0;
    while (!b.die)
    {
       usleep (100000);
@@ -1496,7 +1498,6 @@ app_main ()
          b.micon = 0;
       if (charging.set)
          charge = (charge << 1) | revk_gpio_get (charging);
-      revk_blink (0, 0, b.micon ? "K" : !usb ? "C" : charge == 0xFF ? "Y" : !charge ? "R" : "G");
       if (revk_gpio_get (button))
       {                         // Pressed
          if (press < 255)
@@ -1526,7 +1527,7 @@ app_main ()
       {
          uint32_t c = revk_blinker ();
          revk_led (led_status, 0, 255, c);
-         revk_led (led_status, 1, 255, c);      // TODO something more useful??
+         revk_led (led_status, 1, 255, revk_rgb (b.micon ? 'K' : !usb ? 'C' : charge == 0xFF ? 'Y' : !charge ? 'R' : 'G'));
          REVK_ERR_CHECK (led_strip_refresh (led_status));
       }
    }
