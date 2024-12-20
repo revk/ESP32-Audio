@@ -26,6 +26,8 @@ There are loads of microphones and dictaphones at sensible prices, so why use th
 
 The main reason is flexibility - it is open source - the hardware can do a lot, and it already allows record to SD and upload by web post. It can eventually be a Bluetooth microphone, or a telephone or intercom, etc. You get to do what you like, and can make suggestions and pull requests and load your own code.
 
+The other feature, which is becoming rarer these days, is that it is *stand alone*. No subscription. No accounts or sign up. No cloud services. Nobody training AI on your data.
+
 ## Button
 
 Button works with short or long press (long is 3s).
