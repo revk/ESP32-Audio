@@ -4,7 +4,7 @@ This part if for Amazon - as this is the *manufacturers web site* and so used as
 
 |ASIN|List price|Title|
 |-----|----|----|
-|[B0DQH9SK8K](https://www.amazon.co.uk/dp/B0DQH9SK8K)|£35.00|Small ESP32-S3 high quality voice recorder board with stereo TDK ICS 43434 microphjones, micro SD card slot, and charger circuit|
+|[B0DQH9SK8K](https://www.amazon.co.uk/dp/B0DQH9SK8K)|£35.00|Small ESP32-S3 high quality voice recorder board with stereo TDK ICS 43434 microphones, micro SD card slot, and charger circuit|
 
 ## Trademark
 
