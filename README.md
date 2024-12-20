@@ -106,5 +106,3 @@ Once registered it can then accept a call, and pass audio both ways over RTP, 8k
 Note that there is no echo cancellation, so a caller is likely to hear their own audio come back to them.
 
 Once the call is complete, the audio processing reverts to previous settings.
-
-(This is work in progress)
