@@ -6,6 +6,10 @@ This part if for Amazon - as this is the *manufacturers web site* and so used as
 |-----|----|----|
 |[B0DQH9SK8K](https://www.amazon.co.uk/dp/B0DQH9SK8K)|£35.00|Small ESP32-S3 high quality voice recorder board with stereo TDK ICS 43434 microphjones, micro SD card slot, and charger circuit|
 
+## Trademark
+
+This is an open source project, but bear in mind you cannot sell boards bearing the Andrews & Arnold Ltd name, the A&A logo, the registered trademark AJK logo, or the GS1 allocated EANs assigned to Andrews & Arnold Ltd.
+
 # Open†Mic
 
 († Open source)
